@@ -4,7 +4,7 @@
 Thành viên: Đình Hiếu, Khánh Đăng, Hữu Đạt, Quang Hiếu
 
 Mục tiêu:
- Chế tạo xe cân bằng sử dụng STM32
+ Chế tạo xe cân bằng sử dụng STM32, có khả năng điều khiển từ xa
 
 Tiến độ: 0%
 
