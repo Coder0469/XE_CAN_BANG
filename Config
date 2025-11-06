@@ -2,4 +2,6 @@ CẤU HÌNH CHO STM32F407VET6
 
 <Timer sử dụng (Nếu có)> - <Mục đích> - <PIN (Nếu có)> - <Khác>
 
-TIMER3 - Điều khiển PWM cho động cơ 1 - PA1, PA2, PA3, PA7, PA6
+TIMER3 - Điều khiển PWM cho động cơ 1 - PA1, PA2, PA3, PA6, PA7
+
+ĐIỀU KHIỂN BLUETOOTH - PC6, PC7
