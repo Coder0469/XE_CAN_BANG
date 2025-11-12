@@ -1,0 +1,2 @@
+../Core/Src/MPU.c:19:6:MPU6050_Init	32	static
+../Core/Src/MPU.c:47:6:MPU6050_Read_Data	48	static

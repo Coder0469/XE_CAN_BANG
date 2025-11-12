@@ -25,23 +25,13 @@
 #include <string.h>
 #include <math.h>
 #include "usbd_cdc_if.h"
+#include "DCMotor.h"
+#include "MPU.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef struct{
-	int max_speed;
-	TIM_HandleTypeDef *htim;
-	uint32_t PWM_Channel;
-	uint16_t IN0;
-	uint16_t IN1;
-	uint16_t input;
-	uint16_t exti;
-	int pulse;
-	uint8_t state;
-	GPIO_TypeDef* Port;
 
-} DCMotor;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -55,6 +45,8 @@ typedef struct{
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
@@ -69,63 +61,20 @@ static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 DCMotor MotorA;
-char buffer[100];
-int t = 0;
-int speed = 0;
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-
-}
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-//	if(GPIO_Pin == MotorA.exti){
-//		if(HAL_GPIO_ReadPin(MotorA.Port, MotorA.input) == 0){
-//			MotorA.pulse--;
-//		}
-//		else{
-//			MotorA.pulse++;
-//		}
-//	}
-	MotorA.pulse++;
-}
-
-void DCMotor_Init(DCMotor *motor,int max_speed, TIM_HandleTypeDef *htim,
-				uint32_t PWM_Channel, GPIO_TypeDef* Port,uint16_t IN0, uint16_t IN1){
-	motor->max_speed = max_speed;
-	motor->htim = htim;
-	motor->PWM_Channel = PWM_Channel;
-	motor->Port = Port;
-	motor->IN0 = IN0;
-	motor->IN1 = IN1;
-	motor->pulse = 0;
-	motor->state = 0;
-
-
-}
-
-void DCMotor_Set_Speed(DCMotor *motor,int DutyCycle){
-	 DutyCycle = DutyCycle * motor->htim->Instance->ARR/100;
-	__HAL_TIM_SET_COMPARE(motor->htim,motor->PWM_Channel,(uint16_t) DutyCycle);
-}
-
-void DCMotor_Run(DCMotor *motor, uint8_t direction){
-	if(direction == 1){
-		HAL_GPIO_WritePin(motor->Port, motor->IN0, SET);
-		HAL_GPIO_WritePin(motor->Port, motor->IN1, RESET);
-	}
-	else if(direction == -1){
-		HAL_GPIO_WritePin(motor->Port, motor->IN0, RESET);
-		HAL_GPIO_WritePin(motor->Port, motor->IN1, SET);
-	}
-	else{
-		HAL_GPIO_WritePin(motor->Port, motor->IN0, RESET);
-		HAL_GPIO_WritePin(motor->Port, motor->IN1, RESET);
-	}
+DCMotor MotorB;
+MPU6050_Raw Raw;
+void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
+{
+    CDC_Transmit_FS(TxBuffer, TxBufferLen);
 }
 
 
@@ -167,33 +116,38 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM1_Init();
   MX_USB_DEVICE_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-//  HAL_TIM_Base_Start_IT(&htim3);
-//  HAL_TIM_Base_Start_IT(&htim4);
+  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim4);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+  DCMotor_Init(&MotorA, 60, &htim3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_3, GPIO_PIN_7);
+  DCMotor_Init(&MotorB, 60, &htim4, TIM_CHANNEL_1, GPIOD, GPIO_PIN_11, GPIO_PIN_10);
+  DCMotor_Set_Speed(&MotorB, 100);
+  DCMotor_Set_Speed(&MotorA, 100);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  DCMotor_Init(&MotorA, 60, &htim3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_3, GPIO_PIN_7);
-  DCMotor_Set_Speed(&MotorA, 75);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  int pulse_now = 0;
-  int pulse_before = 0;
-  int delta = 0;
-  float tmp = 0.12;
+
+
+//  DCMotor_Set_Speed(&MotorA, 100);
+
+
+
   while (1)
   {
-	pulse_now = MotorA.pulse;
-	delta = pulse_now - pulse_before;
-	pulse_before = pulse_now;
-	snprintf(buffer, sizeof(buffer), "Pulse count: %d speed: %d\r\n", MotorA.pulse, delta*12/100);
-	CDC_Transmit_FS((uint8_t*)buffer, strlen(buffer));
 
-	HAL_Delay(1000);
+	DCMotor_Run(&MotorB, 1);
 	DCMotor_Run(&MotorA, 1);
-
-//	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, SET);
-
+//	  MPU6050_Read_Data(&Raw);
+//	  uint32_t t_prev = HAL_GetTick();
+//	  float pitch_acc = atan2f(-Raw.Ax, sqrtf(Raw.Ay*Raw.Ay + Raw.Az*Raw.Az)) * 180.0 / PI;
+//	  sprintf(msg, "A: %.2f %.2f %.2f | G: %.2f %.2f %.2f | Pitch: %.2f\r\n",
+//			  Raw.Ax, Raw.Ay, Raw.Az, Raw.Gx, Raw.Gy, Raw.Gz, pitch_acc);
+//	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+//	  HAL_Delay(500);
 
 
     /* USER CODE END WHILE */
@@ -224,7 +178,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLM = 25;
   RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
@@ -246,6 +200,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -429,12 +417,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3|GPIO_PIN_7, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_10|GPIO_PIN_11, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PC0 PC1 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
@@ -443,16 +435,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA1 PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_5;
+  /*Configure GPIO pin : PA1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA2 PA4 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_4;
+  /*Configure GPIO pin : PA2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA3 PA7 */
@@ -462,12 +454,28 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PD8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PD9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PD10 PD11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
