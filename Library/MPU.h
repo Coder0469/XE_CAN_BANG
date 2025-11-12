@@ -5,7 +5,7 @@
 #include <string.h>
 #include <math.h>
 
-I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c1;
 #define PI 3.14159265358979323846f
 #define MPU6050_ADDR (0x68 << 1)  // địa chỉ I2C của MPU6050
 #define SMPLRT_DIV_REG        0x19
@@ -38,7 +38,16 @@ typedef struct {
 	float Temp;
 } MPU6050_Raw;
 
+extern uint8_t TxBuffer[];
+extern uint8_t TxBufferLen;
+extern char msg[64];
+extern uint16_t samples;
+extern float gyro_x_offset, gyro_y_offset, gyro_z_offset;
+extern float angle_roll;
+extern float alpha;
+
 void MPU6050_Init(void);
 
 void MPU6050_Read_Data(MPU6050_Raw *Raw);
+
 
