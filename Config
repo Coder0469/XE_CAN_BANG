@@ -1,0 +1,19 @@
+CẤU HÌNH CHO STM32F407VET6
+
+<Timer sử dụng (Nếu có)> - <Mục đích> - <PIN (Nếu có)> - <Khác>
+
+TIMER3 - Điều khiển PWM cho động cơ 1 - PA1, PA2, PA3, PA6, PA7
+- PA1, PA2 nhận xung từ encoder
+- PA6 xuất xung PWM, gắn vào ENA (PWM CHANNEL 1)
+- PA3, PA7 cấp nguồn cho IN1, IN2
+
+TIMER4 - Điều khiển PWM cho động cơ 2 - PD12, PD11, PD10, PD9, PD8
+- PD8, PD9 nhận xung từ encoder
+- PD12 xuất xung PWM, gắn vào ENB (PWM CHANNEL 1)
+- PD11, PD10 cấp nguồn cho IN3, IN4
+
+I2C1 - PB6, PB7
+- PB6 -> SCL
+- PB7 -> SDA
+
+ĐIỀU KHIỂN BLUETOOTH - PB10, PB11
