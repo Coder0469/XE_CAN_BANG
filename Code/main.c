@@ -71,7 +71,7 @@ static void MX_I2C1_Init(void);
 
 DCMotor MotorA;
 DCMotor MotorB;
-
+MPU6050_Raw Raw;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
     CDC_Transmit_FS(TxBuffer, TxBufferLen);
@@ -141,7 +141,13 @@ int main(void)
 
 	DCMotor_Run(&MotorB, 1);
 	DCMotor_Run(&MotorA, 1);
-
+//	  MPU6050_Read_Data(&Raw);
+//	  uint32_t t_prev = HAL_GetTick();
+//	  float pitch_acc = atan2f(-Raw.Ax, sqrtf(Raw.Ay*Raw.Ay + Raw.Az*Raw.Az)) * 180.0 / PI;
+//	  sprintf(msg, "A: %.2f %.2f %.2f | G: %.2f %.2f %.2f | Pitch: %.2f\r\n",
+//			  Raw.Ax, Raw.Ay, Raw.Az, Raw.Gx, Raw.Gy, Raw.Gz, pitch_acc);
+//	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+//	  HAL_Delay(500);
 
 
     /* USER CODE END WHILE */
