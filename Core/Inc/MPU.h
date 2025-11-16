@@ -49,5 +49,3 @@ extern float alpha;
 void MPU6050_Init(void);
 
 void MPU6050_Read_Data(MPU6050_Raw *Raw);
-
-

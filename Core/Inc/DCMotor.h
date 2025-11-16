@@ -23,4 +23,4 @@ void DCMotor_Init(DCMotor *motor,int max_speed, TIM_HandleTypeDef *htim,
 
 void DCMotor_Set_Speed(DCMotor *motor,uint16_t DutyCycle);
 
-void DCMotor_Run(DCMotor *motor, uint8_t direction);
+void DCMotor_Run(DCMotor *motor, int direction);

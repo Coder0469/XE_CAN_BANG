@@ -20,7 +20,7 @@ void DCMotor_Set_Speed(DCMotor *motor,uint16_t DutyCycle){
 	__HAL_TIM_SET_COMPARE(motor->htim,motor->PWM_Channel, DutyCycle);
 }
 
-void DCMotor_Run(DCMotor *motor, uint8_t direction){
+void DCMotor_Run(DCMotor *motor, int direction){
 	if(direction == 1){
 		HAL_GPIO_WritePin(motor->Port, motor->IN0, SET);
 		HAL_GPIO_WritePin(motor->Port, motor->IN1, RESET);

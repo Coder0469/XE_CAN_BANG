@@ -27,6 +27,8 @@
 #include "usbd_cdc_if.h"
 #include "DCMotor.h"
 #include "MPU.h"
+#include "PID.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -72,12 +74,19 @@ static void MX_I2C1_Init(void);
 DCMotor MotorA;
 DCMotor MotorB;
 MPU6050_Raw Raw;
+PID_Param_t PID;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
-    CDC_Transmit_FS(TxBuffer, TxBufferLen);
 }
 
-
+//void ReadAngle(){
+//	  MPU6050_Read_Data(&Raw);
+//	  float pitch_acc = atan2f(-Raw.Ax, sqrtf(Raw.Ay*Raw.Ay + Raw.Az*Raw.Az)) * 180.0 / PI;
+//	  sprintf(msg, "A: %.2f %.2f %.2f | G: %.2f %.2f %.2f | Pitch: %.2f\r\n",
+//			  Raw.Ax, Raw.Ay, Raw.Az, Raw.Gx, Raw.Gy, Raw.Gz, pitch_acc);
+//	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+//	  HAL_Delay(500);
+//}
 /* USER CODE END 0 */
 
 /**
@@ -88,9 +97,10 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
-
-
+	PID_Init(&PID, 150,0, 0, 1, 0, -100, 100, 1);
+	uint32_t curr = HAL_GetTick();
+	uint32_t prev = 0;
+	float t;
 
   /* USER CODE END 1 */
 
@@ -124,8 +134,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   DCMotor_Init(&MotorA, 60, &htim3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_3, GPIO_PIN_7);
   DCMotor_Init(&MotorB, 60, &htim4, TIM_CHANNEL_1, GPIOD, GPIO_PIN_11, GPIO_PIN_10);
-  DCMotor_Set_Speed(&MotorB, 100);
-  DCMotor_Set_Speed(&MotorA, 100);
+  MPU6050_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -139,17 +148,28 @@ int main(void)
   while (1)
   {
 
-	DCMotor_Run(&MotorB, 1);
-	DCMotor_Run(&MotorA, 1);
-//	  MPU6050_Read_Data(&Raw);
-//	  uint32_t t_prev = HAL_GetTick();
-//	  float pitch_acc = atan2f(-Raw.Ax, sqrtf(Raw.Ay*Raw.Ay + Raw.Az*Raw.Az)) * 180.0 / PI;
-//	  sprintf(msg, "A: %.2f %.2f %.2f | G: %.2f %.2f %.2f | Pitch: %.2f\r\n",
-//			  Raw.Ax, Raw.Ay, Raw.Az, Raw.Gx, Raw.Gy, Raw.Gz, pitch_acc);
-//	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
-//	  HAL_Delay(500);
+	MPU6050_Read_Data(&Raw);
+	curr = HAL_GetTick();
+	PID_SetSamplingTime(&PID, curr-prev);
+	prev = curr;
+	t = PID_Calculate(&PID, Raw.Ax);
+	int direction = 0;
+	if(t > 0) direction = BACKWARD;
+	else direction = FORWARD;
+
+	if(t < 0) t = -t;
+	if(t > 100) t =100;
+
+	DCMotor_Set_Speed(&MotorB, t);
+	DCMotor_Set_Speed(&MotorA, t);
+	DCMotor_Run(&MotorB, direction);
+	DCMotor_Run(&MotorA, direction);
 
 
+	  char msg[100];
+	  sprintf(msg,"Ax: %.2f  Ay: %.2f  Az: %.2f \r\n ",Raw.Ax, Raw.Ay, Raw.Az);
+//	  sprintf(msg,"t: %.2f: \r\n",t);
+	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -178,7 +198,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
@@ -224,7 +244,7 @@ static void MX_I2C1_Init(void)
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
   hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_ENABLE;
   hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
   if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
