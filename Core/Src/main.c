@@ -78,7 +78,32 @@ PID_Param_t PID;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+////    if(htim->Instance == htim1.Instance)
+////    {
+//
+////    }
+//}
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	if(GPIO_Pin == GPIO_PIN_1){
+		if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == 0) {
+			MotorA.pulse--;
+		}
+		else {
+			MotorA.pulse++;
+		}
+	}
+	else{
+		if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_9) == 0) {
+			MotorB.pulse++;
+		}
+		else {
+			MotorB.pulse--;
+		}
+	}
 
+}
 //void ReadAngle(){
 //	  MPU6050_Read_Data(&Raw);
 //	  float pitch_acc = atan2f(-Raw.Ax, sqrtf(Raw.Ay*Raw.Ay + Raw.Az*Raw.Az)) * 180.0 / PI;
@@ -98,8 +123,9 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	PID_Init(&PID, 150,0, 0, 1, 0, -100, 100, 1);
-	uint32_t curr = HAL_GetTick();
-	uint32_t prev = 0;
+	int curr = HAL_GetTick();
+	int prev = 0;
+	int sampling_time = 0;
 	float t;
 
   /* USER CODE END 1 */
@@ -128,12 +154,13 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim3);
-  HAL_TIM_Base_Start_IT(&htim4);
+//  HAL_TIM_Base_Start_IT(&htim3);
+//  HAL_TIM_Base_Start_IT(&htim4);
+//  HAL_TIM_Base_Start_IT(&htim1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
-  DCMotor_Init(&MotorA, 60, &htim3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_3, GPIO_PIN_7);
-  DCMotor_Init(&MotorB, 60, &htim4, TIM_CHANNEL_1, GPIOD, GPIO_PIN_11, GPIO_PIN_10);
+  DCMotor_Init(&MotorA, &htim3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_3, GPIO_PIN_7);
+  DCMotor_Init(&MotorB, &htim4, TIM_CHANNEL_1, GPIOD, GPIO_PIN_11, GPIO_PIN_10);
   MPU6050_Init();
   /* USER CODE END 2 */
 
@@ -144,32 +171,45 @@ int main(void)
 //  DCMotor_Set_Speed(&MotorA, 100);
 
 
+	DCMotor_Set_Speed(&MotorB, 50);
+	DCMotor_Set_Speed(&MotorA, 50);
+	DCMotor_Run(&MotorB, FORWARD);
+	DCMotor_Run(&MotorA, FORWARD);
 
   while (1)
   {
 
-	MPU6050_Read_Data(&Raw);
+//	  HAL_Delay(500);
+
+//	MPU6050_Read_Data(&Raw);
 	curr = HAL_GetTick();
-	PID_SetSamplingTime(&PID, curr-prev);
+	sampling_time = curr-prev;
+	DCMotor_CalculateSpeed(&MotorA, (float)sampling_time);
+	DCMotor_CalculateSpeed(&MotorB, (float)sampling_time);
+	PID_SetSamplingTime(&PID, sampling_time);
 	prev = curr;
-	t = PID_Calculate(&PID, Raw.Ax);
-	int direction = 0;
-	if(t > 0) direction = BACKWARD;
-	else direction = FORWARD;
-
-	if(t < 0) t = -t;
-	if(t > 100) t =100;
-
-	DCMotor_Set_Speed(&MotorB, t);
-	DCMotor_Set_Speed(&MotorA, t);
-	DCMotor_Run(&MotorB, direction);
-	DCMotor_Run(&MotorA, direction);
-
-
-	  char msg[100];
-	  sprintf(msg,"Ax: %.2f  Ay: %.2f  Az: %.2f \r\n ",Raw.Ax, Raw.Ay, Raw.Az);
+	sprintf(msg,"Xung B: %d  Xung A: %d  Speed B: %.2f  Speed A: %.2f Time: %d  \r\n ",
+			MotorB.pulse, MotorA.pulse,MotorB.speed, MotorA.speed,sampling_time);
+	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+	HAL_Delay(10);
+//	t = PID_Calculate(&PID, Raw.Ax);
+//	int direction = 0;
+//	if(t > 0) direction = BACKWARD;
+//	else direction = FORWARD;
+//
+//	if(t < 0) t = -t;
+//	if(t > 100) t =100;
+//
+//	DCMotor_Set_Speed(&MotorB, t);
+//	DCMotor_Set_Speed(&MotorA, t);
+//	DCMotor_Run(&MotorB, direction);
+//	DCMotor_Run(&MotorA, direction);
+//
+//
+//	  char msg[100];
+//	  sprintf(msg,"Ax: %.2f  Ay: %.2f  Az: %.2f \r\n ",Raw.Ax, Raw.Ay, Raw.Az);
 //	  sprintf(msg,"t: %.2f: \r\n",t);
-	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+//	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -474,16 +514,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PD8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
   /*Configure GPIO pin : PD9 */
   GPIO_InitStruct.Pin = GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PD10 PD11 */
@@ -493,9 +527,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PD14 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

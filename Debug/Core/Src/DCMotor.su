@@ -1,3 +1,4 @@
 ../Core/Src/DCMotor.c:4:6:DCMotor_Init	24	static
-../Core/Src/DCMotor.c:18:6:DCMotor_Set_Speed	16	static
-../Core/Src/DCMotor.c:23:6:DCMotor_Run	16	static
+../Core/Src/DCMotor.c:19:6:DCMotor_Set_Speed	16	static
+../Core/Src/DCMotor.c:24:6:DCMotor_Run	16	static
+../Core/Src/DCMotor.c:39:6:DCMotor_CalculateSpeed	16	static
