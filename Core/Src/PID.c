@@ -18,6 +18,9 @@ void PID_Init(PID_Param_t *pid, float Kp, float Ki, float Kd, float Ts, float Se
 void PID_SetSamplingTime(PID_Param_t *pid,float Ts){
 	pid->Ts = Ts;
 }
+void PID_SetSetPoint(PID_Param_t *pid,float Setpoint){
+	pid->Setpoint = Setpoint;
+}
 // PID Calculation function
 float PID_Calculate(PID_Param_t *pid, float Input) {
     float Error = pid->Setpoint - Input;

@@ -22,7 +22,7 @@ typedef struct{
 void DCMotor_Init(DCMotor *motor, TIM_HandleTypeDef *htim,
 				uint32_t PWM_Channel, GPIO_TypeDef* Port,uint16_t IN0, uint16_t IN1);
 
-void DCMotor_Set_Speed(DCMotor *motor,uint16_t DutyCycle);
+void DCMotor_Set_Speed(DCMotor *motor,uint32_t DutyCycle);
 
 void DCMotor_Run(DCMotor *motor, int direction);
 

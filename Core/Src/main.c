@@ -70,11 +70,11 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 DCMotor MotorA;
 DCMotor MotorB;
 MPU6050_Raw Raw;
-PID_Param_t PID;
+PID_Param_t PID_speed;
+PID_Param_t PID_angle;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
@@ -86,8 +86,10 @@ void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 ////    }
 //}
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	if(GPIO_Pin == GPIO_PIN_1){
-		if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2) == 0) {
+	if(GPIO_Pin == ((uint16_t)0x0002)){
+		//(uint16_t)0x0002) = GPIO_PIN_1
+		if (HAL_GPIO_ReadPin(((GPIO_TypeDef *) GPIOA_BASE), ((uint16_t)0x0004)) == 0) {
+			//(uint16_t)0x0004) = GPIO_PIN_2
 			MotorA.pulse--;
 		}
 		else {
@@ -95,7 +97,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		}
 	}
 	else{
-		if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_9) == 0) {
+		if (HAL_GPIO_ReadPin(((GPIO_TypeDef *) GPIOD_BASE), ((uint16_t)0x0200)) == 0) {
+			//(uint16_t)0x0200) = GPIO_PIN_9
 			MotorB.pulse++;
 		}
 		else {
@@ -122,11 +125,14 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	PID_Init(&PID, 150,0, 0, 1, 0, -100, 100, 1);
+	PID_Init(&PID_angle, 0 ,0, 0, 1, 0, -100, 100, 1);
+	PID_Init(&PID_speed, 50, 0.5, 30, 1, 1.2, -100, 100, 1);
 	int curr = HAL_GetTick();
 	int prev = 0;
 	int sampling_time = 0;
 	float t;
+	int direction = 0;
+
 
   /* USER CODE END 1 */
 
@@ -171,10 +177,7 @@ int main(void)
 //  DCMotor_Set_Speed(&MotorA, 100);
 
 
-	DCMotor_Set_Speed(&MotorB, 50);
-	DCMotor_Set_Speed(&MotorA, 50);
-	DCMotor_Run(&MotorB, FORWARD);
-	DCMotor_Run(&MotorA, FORWARD);
+
 
   while (1)
   {
@@ -184,21 +187,37 @@ int main(void)
 //	MPU6050_Read_Data(&Raw);
 	curr = HAL_GetTick();
 	sampling_time = curr-prev;
+
+	PID_SetSamplingTime(&PID_angle, (float)sampling_time);
+	PID_SetSamplingTime(&PID_speed, (float)sampling_time);
+
 	DCMotor_CalculateSpeed(&MotorA, (float)sampling_time);
 	DCMotor_CalculateSpeed(&MotorB, (float)sampling_time);
-	PID_SetSamplingTime(&PID, sampling_time);
+
+	t = PID_Calculate(&PID_speed, MotorA.speed);
+
+
 	prev = curr;
-	sprintf(msg,"Xung B: %d  Xung A: %d  Speed B: %.2f  Speed A: %.2f Time: %d  \r\n ",
-			MotorB.pulse, MotorA.pulse,MotorB.speed, MotorA.speed,sampling_time);
+//	sprintf(msg,"Xung B: %d  Xung A: %d  Speed B: %.2f  Speed A: %.2f Time: %d  \r\n ",
+//			MotorB.pulse, MotorA.pulse,MotorB.speed, MotorA.speed,sampling_time);
+	sprintf(msg,"%.2f \r\n",MotorA.speed);
+//	sprintf(msg,"t: %.2f speed: %.2f\r\n",t,MotorA.speed);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 	HAL_Delay(10);
-//	t = PID_Calculate(&PID, Raw.Ax);
-//	int direction = 0;
-//	if(t > 0) direction = BACKWARD;
-//	else direction = FORWARD;
-//
-//	if(t < 0) t = -t;
-//	if(t > 100) t =100;
+
+	if(t < 0){
+		direction = BACKWARD;
+		t = -t;
+	}
+	else direction = FORWARD;
+
+
+
+	DCMotor_Set_Speed(&MotorB, (uint32_t)t);
+	DCMotor_Set_Speed(&MotorA, (uint32_t)t);
+	DCMotor_Run(&MotorB, direction);
+	DCMotor_Run(&MotorA, direction);
+
 //
 //	DCMotor_Set_Speed(&MotorB, t);
 //	DCMotor_Set_Speed(&MotorA, t);

@@ -16,7 +16,7 @@ void DCMotor_Init(DCMotor *motor, TIM_HandleTypeDef *htim,
 
 }
 
-void DCMotor_Set_Speed(DCMotor *motor,uint16_t DutyCycle){
+void DCMotor_Set_Speed(DCMotor *motor,uint32_t DutyCycle){
 	 DutyCycle = DutyCycle * motor->htim->Instance->ARR/100;
 	__HAL_TIM_SET_COMPARE(motor->htim,motor->PWM_Channel, DutyCycle);
 }
@@ -37,9 +37,8 @@ void DCMotor_Run(DCMotor *motor, int direction){
 }
 
 void DCMotor_CalculateSpeed(DCMotor *motor, float duration){
-	duration = duration+0.001;
+//	duration = duration+0.001;
 	if(motor->prev_pulse < motor->pulse - 1000) motor->prev_pulse = motor->pulse - 1000;
 	motor->speed = (motor->pulse - motor->prev_pulse)/duration;
-	if(motor->speed < 0) motor->speed = -motor->speed;
 	motor->prev_pulse = motor->pulse;
 }

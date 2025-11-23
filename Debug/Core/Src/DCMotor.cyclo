@@ -1,4 +1,4 @@
 ../Core/Src/DCMotor.c:4:6:DCMotor_Init	1
 ../Core/Src/DCMotor.c:19:6:DCMotor_Set_Speed	4
 ../Core/Src/DCMotor.c:24:6:DCMotor_Run	3
-../Core/Src/DCMotor.c:39:6:DCMotor_CalculateSpeed	3
+../Core/Src/DCMotor.c:39:6:DCMotor_CalculateSpeed	2

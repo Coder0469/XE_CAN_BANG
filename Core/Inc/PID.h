@@ -20,3 +20,5 @@ void PID_Init(PID_Param_t *pid, float Kp, float Ki, float Kd, float Ts,
 float PID_Calculate(PID_Param_t *pid, float Input);
 
 void PID_SetSamplingTime(PID_Param_t *pid,float Ts);
+
+void PID_SetSetPoint(PID_Param_t *pid,float Setpoint);
