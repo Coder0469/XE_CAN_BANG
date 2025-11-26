@@ -48,7 +48,7 @@ void MPU6050_Read_Data(MPU6050_Raw *Raw){
 
 	uint8_t Rec_Data[14];
 	// Read 6 BYTES of data starting from ACCEL_XOUT_H register
-	HAL_I2C_Mem_Read (&hi2c1, MPU6050_ADDR, ACCEL_XOUT_H_REG, 1, Rec_Data, 14, timeOut);
+	HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR, ACCEL_XOUT_H_REG, 1, Rec_Data, 14,timeOut);
 
 	Raw->Accel_X_RAW = (int16_t)(Rec_Data[0]  << 8 | Rec_Data [1]);
 	Raw->Accel_Y_RAW = (int16_t)(Rec_Data[2]  << 8 | Rec_Data [3]);

@@ -28,6 +28,7 @@
 #include "DCMotor.h"
 #include "MPU.h"
 #include "PID.h"
+#include "stm32f4xx_it.h"
 
 /* USER CODE END Includes */
 
@@ -48,6 +49,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+DMA_HandleTypeDef hdma_i2c1_rx;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
@@ -60,11 +62,18 @@ TIM_HandleTypeDef htim4;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
+
+int sampling_time = 0;
+float t;
+float a;
+float angle = 0;
+int direction = 0;
 
 /* USER CODE END PFP */
 
@@ -125,13 +134,14 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	PID_Init(&PID_angle, 0 ,0, 0, 1, 0, -100, 100, 1);
-	PID_Init(&PID_speed, 50, 0.5, 30, 1, 1.2, -100, 100, 1);
 	int curr = HAL_GetTick();
 	int prev = 0;
-	int sampling_time = 0;
-	float t;
-	int direction = 0;
+	int out_time = 0;
+	int angle_time = 0;
+	PID_Init(&PID_angle, 0.05 ,0.06, 0.2, 1, 3, -2.7, 2.7, 1);
+	PID_Init(&PID_speed, 50, 1, 20, 1, 2, -100, 100, 1);
+//	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
+
 
 
   /* USER CODE END 1 */
@@ -154,6 +164,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_TIM1_Init();
@@ -162,7 +173,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 //  HAL_TIM_Base_Start_IT(&htim3);
 //  HAL_TIM_Base_Start_IT(&htim4);
-//  HAL_TIM_Base_Start_IT(&htim1);
+  HAL_TIM_Base_Start_IT(&htim1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   DCMotor_Init(&MotorA, &htim3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_3, GPIO_PIN_7);
@@ -184,9 +195,9 @@ int main(void)
 
 //	  HAL_Delay(500);
 
-//	MPU6050_Read_Data(&Raw);
+	MPU6050_Read_Data(&Raw);
 	curr = HAL_GetTick();
-	sampling_time = curr-prev;
+	sampling_time = curr-prev + 1;
 
 	PID_SetSamplingTime(&PID_angle, (float)sampling_time);
 	PID_SetSamplingTime(&PID_speed, (float)sampling_time);
@@ -194,41 +205,46 @@ int main(void)
 	DCMotor_CalculateSpeed(&MotorA, (float)sampling_time);
 	DCMotor_CalculateSpeed(&MotorB, (float)sampling_time);
 
+	float angle_acc = atan2f(Raw.Ax, Raw.Az) * 180 / 3.1415;
+	angle = 0.5 * (angle + Raw.Gx * 0.01)+ 0.5 * angle_acc;
+
+	a = PID_Calculate(&PID_angle, angle);
+	angle_time = curr;
+
+
+	PID_speed.Setpoint = a;
 	t = PID_Calculate(&PID_speed, MotorA.speed);
+//	t = a;
 
 
 	prev = curr;
 //	sprintf(msg,"Xung B: %d  Xung A: %d  Speed B: %.2f  Speed A: %.2f Time: %d  \r\n ",
 //			MotorB.pulse, MotorA.pulse,MotorB.speed, MotorA.speed,sampling_time);
-	sprintf(msg,"%.2f \r\n",MotorA.speed);
+
+//	sprintf(msg,"t: %.2f a: %.2f goc: %.2f Ax: %.2f speed: %.2f \r\n",t, a, angle, Raw.Ax,MotorA.speed);
+//	sprintf(msg,"%.2f \r\n",MotorA.speed);
 //	sprintf(msg,"t: %.2f speed: %.2f\r\n",t,MotorA.speed);
-	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
-	HAL_Delay(10);
+	sprintf(msg,"%.2f time: %d\r\n",angle,sampling_time-1);
+	if(curr - out_time >= 1){
+		CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+		out_time = curr;
+	}
+
+
 
 	if(t < 0){
 		direction = BACKWARD;
 		t = -t;
 	}
-	else direction = FORWARD;
+	else{
+		direction = FORWARD;
 
+	}
 
-
-	DCMotor_Set_Speed(&MotorB, (uint32_t)t);
-	DCMotor_Set_Speed(&MotorA, (uint32_t)t);
+	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
+	DCMotor_Set_Speed(&MotorA, (uint32_t) t);
 	DCMotor_Run(&MotorB, direction);
 	DCMotor_Run(&MotorA, direction);
-
-//
-//	DCMotor_Set_Speed(&MotorB, t);
-//	DCMotor_Set_Speed(&MotorA, t);
-//	DCMotor_Run(&MotorB, direction);
-//	DCMotor_Run(&MotorA, direction);
-//
-//
-//	  char msg[100];
-//	  sprintf(msg,"Ax: %.2f  Ay: %.2f  Az: %.2f \r\n ",Raw.Ax, Raw.Ay, Raw.Az);
-//	  sprintf(msg,"t: %.2f: \r\n",t);
-//	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -476,6 +492,22 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 2 */
   HAL_TIM_MspPostInit(&htim4);
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
 
 }
 
