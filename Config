@@ -7,8 +7,8 @@ TIMER3 - Điều khiển PWM cho động cơ 1 - PA1, PA2, PA3, PA6, PA7
 - PA6 xuất xung PWM, gắn vào ENA (PWM CHANNEL 1)
 - PA7, PA3 cấp nguồn cho IN1, IN2
 
-TIMER4 - Điều khiển PWM cho động cơ 2 - PD12, PD11, PD10, PD9, PD15
-- PD15, PD9 nhận xung từ encoder
+TIMER4 - Điều khiển PWM cho động cơ 2 - PD12, PD11, PD10, PD9, PD14
+- PD14, PD9 nhận xung từ encoder
 - PD12 xuất xung PWM, gắn vào ENB (PWM CHANNEL 1)
 - PD10, PD11 cấp nguồn cho IN3, IN4
 
