@@ -1,9 +1,5 @@
 #include "stm32f4xx_hal.h"
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+
 
 extern I2C_HandleTypeDef hi2c1;
 #define PI 3.14159265358979323846f

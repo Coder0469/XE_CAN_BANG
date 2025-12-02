@@ -22,12 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <string.h>
-#include <math.h>
 #include "usbd_cdc_if.h"
-#include "DCMotor.h"
-#include "MPU.h"
-#include "PID.h"
 #include "stm32f4xx_it.h"
 
 /* USER CODE END Includes */
@@ -51,7 +46,7 @@
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 
-TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
@@ -65,15 +60,11 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
-static void MX_TIM1_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
-int sampling_time = 0;
-float t;
-float a;
-float angle = 0;
-int direction = 0;
+
 
 /* USER CODE END PFP */
 
@@ -84,16 +75,14 @@ DCMotor MotorB;
 MPU6050_Raw Raw;
 PID_Param_t PID_speed;
 PID_Param_t PID_angle;
+float curr_speed = 0;
+float sampling_time = 0;
+int count = 0;
+float angle = 0;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-////    if(htim->Instance == htim1.Instance)
-////    {
-//
-////    }
-//}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if(GPIO_Pin == ((uint16_t)0x0002)){
 		//(uint16_t)0x0002) = GPIO_PIN_1
@@ -134,12 +123,10 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	int curr = HAL_GetTick();
-	int prev = 0;
-	int out_time = 0;
-	int angle_time = 0;
-	PID_Init(&PID_angle, 0.05 ,0.06, 0.2, 1, 3, -2.7, 2.7, 1);
-	PID_Init(&PID_speed, 50, 1, 20, 1, 2, -100, 100, 1);
+
+	PID_Init(&PID_angle, 0.1, 0, 0.5, CalSpeedTime, -1, -1, 1, 1);
+	PID_Init(&PID_speed, 80, 1, 40, CalSpeedTime, 0.5, -100, 100, 1);
+
 //	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
 
 
@@ -167,13 +154,13 @@ int main(void)
   MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
-  MX_TIM1_Init();
   MX_USB_DEVICE_Init();
   MX_I2C1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 //  HAL_TIM_Base_Start_IT(&htim3);
 //  HAL_TIM_Base_Start_IT(&htim4);
-  HAL_TIM_Base_Start_IT(&htim1);
+  HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   DCMotor_Init(&MotorA, &htim3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_3, GPIO_PIN_7);
@@ -193,58 +180,26 @@ int main(void)
   while (1)
   {
 
-//	  HAL_Delay(500);
 
-	MPU6050_Read_Data(&Raw);
-	curr = HAL_GetTick();
-	sampling_time = curr-prev + 1;
-
-	PID_SetSamplingTime(&PID_angle, (float)sampling_time);
-	PID_SetSamplingTime(&PID_speed, (float)sampling_time);
-
-	DCMotor_CalculateSpeed(&MotorA, (float)sampling_time);
-	DCMotor_CalculateSpeed(&MotorB, (float)sampling_time);
-
-	float angle_acc = atan2f(Raw.Ax, Raw.Az) * 180 / 3.1415;
-	angle = 0.5 * (angle + Raw.Gx * 0.01)+ 0.5 * angle_acc;
-
-	a = PID_Calculate(&PID_angle, angle);
-	angle_time = curr;
+//	a = PID_Calculate(&PID_angle, angle);
 
 
-	PID_speed.Setpoint = a;
-	t = PID_Calculate(&PID_speed, MotorA.speed);
+
+//	PID_speed.Setpoint = a;
+
 //	t = a;
 
 
-	prev = curr;
-//	sprintf(msg,"Xung B: %d  Xung A: %d  Speed B: %.2f  Speed A: %.2f Time: %d  \r\n ",
-//			MotorB.pulse, MotorA.pulse,MotorB.speed, MotorA.speed,sampling_time);
 
 //	sprintf(msg,"t: %.2f a: %.2f goc: %.2f Ax: %.2f speed: %.2f \r\n",t, a, angle, Raw.Ax,MotorA.speed);
-//	sprintf(msg,"%.2f \r\n",MotorA.speed);
+
 //	sprintf(msg,"t: %.2f speed: %.2f\r\n",t,MotorA.speed);
-	sprintf(msg,"%.2f time: %d\r\n",angle,sampling_time-1);
-	if(curr - out_time >= 1){
-		CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
-		out_time = curr;
-	}
+//	sprintf(msg,"%.2f time: %d\r\n",angle,sampling_time-1);
 
 
+//	t = 100;
+//	direction = FORWARD;
 
-	if(t < 0){
-		direction = BACKWARD;
-		t = -t;
-	}
-	else{
-		direction = FORWARD;
-
-	}
-
-	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
-	DCMotor_Set_Speed(&MotorA, (uint32_t) t);
-	DCMotor_Run(&MotorB, direction);
-	DCMotor_Run(&MotorA, direction);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -332,48 +287,47 @@ static void MX_I2C1_Init(void)
 }
 
 /**
-  * @brief TIM1 Initialization Function
+  * @brief TIM2 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_TIM1_Init(void)
+static void MX_TIM2_Init(void)
 {
 
-  /* USER CODE BEGIN TIM1_Init 0 */
+  /* USER CODE BEGIN TIM2_Init 0 */
 
-  /* USER CODE END TIM1_Init 0 */
+  /* USER CODE END TIM2_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
 
-  /* USER CODE BEGIN TIM1_Init 1 */
+  /* USER CODE BEGIN TIM2_Init 1 */
 
-  /* USER CODE END TIM1_Init 1 */
-  htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 16799;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 9999;
-  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 8399;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 99;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM1_Init 2 */
+  /* USER CODE BEGIN TIM2_Init 2 */
 
-  /* USER CODE END TIM1_Init 2 */
+  /* USER CODE END TIM2_Init 2 */
 
 }
 

@@ -1,10 +1,6 @@
 
 #include "MPU.h"
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+
 
 
 uint8_t TxBuffer[] = "Hello World! From STM32 USB CDC Device To Virtual COM Port\r\n";

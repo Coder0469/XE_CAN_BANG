@@ -31,11 +31,24 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "PID.h"
+#include "DCMotor.h"
+#include "MPU.h"
+#include <math.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+extern DCMotor MotorA;
+extern DCMotor MotorB;
+extern MPU6050_Raw Raw;
+extern PID_Param_t PID_speed;
+extern PID_Param_t PID_angle;
+extern float curr_speed;
+extern float sampling_time;
+extern float angle;
+extern int count;
 
 /* USER CODE END ET */
 
@@ -61,7 +74,7 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-
+#define CalSpeedTime 10
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
