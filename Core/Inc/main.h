@@ -49,6 +49,8 @@ extern float curr_speed;
 extern float sampling_time;
 extern float angle;
 extern int count;
+extern float Setpoint;
+extern float Deadzone;
 
 /* USER CODE END ET */
 
@@ -74,7 +76,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-#define CalSpeedTime 10
+#define CalSpeedTime 2
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -240,35 +240,38 @@ void TIM2_IRQHandler(void)
 	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
 	curr_speed = (MotorA.speed + MotorB.speed)/2;
 
-	float angle_acc = atan2f(Raw.Ax, Raw.Az) * 180 / 3.1415;
-	angle = 0 * (angle + Raw.Gx * 0.01)+ 1 * angle_acc;
-	float a = PID_Calculate(&PID_angle, -angle);
+	float angle_acc = atan2f(Raw.Ax, Raw.Az);
+	angle = 0.9 * (angle + Raw.Gx * CalSpeedTime/1000)+ 0.1 * angle_acc;
+	float a = PID_Calculate(&PID_angle, -sin(angle));
 	PID_speed.Setpoint = a;
 
 	float t = PID_Calculate(&PID_speed, curr_speed);
-
+	if(angle <= Setpoint + Deadzone  && angle >= -Setpoint - Deadzone) t = 0;
+//	if(angle_acc >= 0.5) t = 100;
+//	else if (angle_acc <= -0.5) t = -100;
 	int direction = 0;
 	if(t < 0){
+		t = t*1.3;
 		direction = BACKWARD;
 		t = -t;
 	}
 	else{
 		direction = FORWARD;
+		t = 0.8*t;
 
 	}
+	if(t > 100) t = 100;
+//
 //	t = 100;
 //	direction = FORWARD;
-	if(count < 20){
-		t = 100;
-		count++;
-	}
+
 	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
 	DCMotor_Set_Speed(&MotorA, (uint32_t) t);
 	DCMotor_Run(&MotorB, direction);
 	DCMotor_Run(&MotorA, direction);
 
 	sprintf(msg,"spe: %.2f dc: %d angle: %.2f a: %.2f\r\n",
-				curr_speed,(uint32_t)t,angle,a);
+				curr_speed*100,(uint32_t)t,angle,a);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 	count = 0;
 

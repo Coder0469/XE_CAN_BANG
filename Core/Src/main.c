@@ -79,6 +79,8 @@ float curr_speed = 0;
 float sampling_time = 0;
 int count = 0;
 float angle = 0;
+float Setpoint = 0.2;
+float Deadzone = 0;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
@@ -124,8 +126,8 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle, 0.1, 0, 0.5, CalSpeedTime, -1, -1, 1, 1);
-	PID_Init(&PID_speed, 80, 1, 40, CalSpeedTime, 0.5, -100, 100, 1);
+	PID_Init(&PID_angle, 10, 0 , 0, CalSpeedTime, Setpoint, -6, 6, 0);
+	PID_Init(&PID_speed, 110, 0.5, 40, CalSpeedTime, 0.2, -100, 100, 1);
 
 //	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
 
@@ -228,7 +230,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLM = 25;
   RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
@@ -307,7 +309,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 8399;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 99;
+  htim2.Init.Period = 19;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)

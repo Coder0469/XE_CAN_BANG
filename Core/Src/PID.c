@@ -41,8 +41,11 @@ float PID_Calculate(PID_Param_t *pid, float Input) {
     float Output = Proportional + Integral + Derivative;
 
     // Output clamping
-    if (Output > pid->OutMax) Output = pid->OutMax;
-    if (Output < pid->OutMin) Output = pid->OutMin;
+    if(pid->AntiWindup){
+        if (Output > pid->OutMax) Output = pid->OutMax;
+        if (Output < pid->OutMin) Output = pid->OutMin;
+    }
+
 
     return Output;
 }
