@@ -78,9 +78,21 @@ PID_Param_t PID_angle;
 float curr_speed = 0;
 float sampling_time = 0;
 int count = 0;
-float angle = 0;
+int count0 = 0;
+
+float angle = 2;
+float Gyro_angle = 0;
+float prev_angle = 0;
+
+float total_Az = 0;
+float total_Ax = 0;
+float total_Gy = 0;
+
 float Setpoint = 0;
-float Deadzone = 5;
+float Deadzone3 = 10;
+float Deadzone0 = 15;
+float Deadzone1 = 30;
+float Deadzone2 = 10;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
@@ -126,8 +138,8 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle, 30, 0, 0,CalSpeedTime, Setpoint, -100, 100, 0);
-//	PID_Init(&PID_speed, 110, 0.5, 40, CalSpeedTime, 0.2, -100, 100, 1);
+	PID_Init(&PID_angle,1, 1, 0,CalSpeedTime, Setpoint, -2, 2, 1);
+	PID_Init(&PID_speed, 75, 5, 40, CalSpeedTime, 1, -100, 100, 1);
 
 //	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
 
@@ -182,25 +194,6 @@ int main(void)
   while (1)
   {
 
-
-//	a = PID_Calculate(&PID_angle, angle);
-
-
-
-//	PID_speed.Setpoint = a;
-
-//	t = a;
-
-
-
-//	sprintf(msg,"t: %.2f a: %.2f goc: %.2f Ax: %.2f speed: %.2f \r\n",t, a, angle, Raw.Ax,MotorA.speed);
-
-//	sprintf(msg,"t: %.2f speed: %.2f\r\n",t,MotorA.speed);
-//	sprintf(msg,"%.2f time: %d\r\n",angle,sampling_time-1);
-
-
-//	t = 100;
-//	direction = FORWARD;
 
     /* USER CODE END WHILE */
 
