@@ -92,11 +92,7 @@ float total_Ax = 0;
 float total_Gy = 0;
 
 float Setpoint = 0;
-<<<<<<< HEAD
 float Deadzone3 = 5;
-=======
-float Deadzone3 = 10;
->>>>>>> 48d3dd908072070ef9155411766f209343d437da
 float Deadzone0 = 15;
 float Deadzone1 = 30;
 float Deadzone2 = 10;
@@ -145,11 +141,8 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-<<<<<<< HEAD
 	PID_Init(&PID_angle,1.5, 0.5, 1.5,CalSpeedTime, Setpoint, -2, 2, 1);
-=======
 	PID_Init(&PID_angle,1, 1, 0,CalSpeedTime, Setpoint, -2, 2, 1);
->>>>>>> 48d3dd908072070ef9155411766f209343d437da
 	PID_Init(&PID_speed, 75, 5, 40, CalSpeedTime, 1, -100, 100, 1);
 
 //	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
