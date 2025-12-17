@@ -24,7 +24,7 @@ void PID_SetSetPoint(PID_Param_t *pid,float Setpoint){
 	pid->Setpoint = Setpoint;
 }
 // PID Calculation function
-float PID_Calculate(PID_Param_t *pid, float Input) {
+float PID_Calculate(PID_Param_t *pid, float Input,float prev_angle,int isAngle) {
     float Error = pid->Setpoint - Input;
     float Proportional = pid->Kp * Error;
 
@@ -34,9 +34,15 @@ float PID_Calculate(PID_Param_t *pid, float Input) {
         if (pid->IntegralSum < pid->OutMin) pid->IntegralSum = pid->OutMin;
     }
     float Integral = pid->Ki * pid->IntegralSum;
+    float Derivative;
+    if(isAngle){
+        Derivative = pid->Kd * (Input - prev_angle) / pid->Ts;
+    }
+    else{
+    	Derivative = pid->Kd * (Error - pid->PreviousError) / pid->Ts;
+    	pid->PreviousError = Error;
+    }
 
-    float Derivative = pid->Kd * (Error - pid->PreviousError) / pid->Ts;
-    pid->PreviousError = Error;
 
     float Output = Proportional + Integral + Derivative;
 
