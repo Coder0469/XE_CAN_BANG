@@ -49,8 +49,17 @@ extern float curr_speed;
 extern float sampling_time;
 extern float angle;
 extern int count;
+extern int count0;
 extern float Setpoint;
-extern float Deadzone;
+extern float Deadzone0;
+extern float Deadzone1;
+extern float Deadzone2;
+extern float Deadzone3;
+extern float total_Ax;
+extern float total_Az;
+extern float total_Gy;
+extern float Gyro_angle;
+extern float prev_angle;
 
 /* USER CODE END ET */
 
