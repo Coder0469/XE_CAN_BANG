@@ -5520,77 +5520,76 @@ LOAD C:/Program Files/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.
  .text.HAL_GPIO_EXTI_Callback
                 0x08001718       0x74 ./Core/Src/main.o
                 0x08001718                HAL_GPIO_EXTI_Callback
- .text.main     0x0800178c      0x12c ./Core/Src/main.o
+ .text.main     0x0800178c      0x130 ./Core/Src/main.o
                 0x0800178c                main
  .text.SystemClock_Config
-                0x080018b8       0xd4 ./Core/Src/main.o
-                0x080018b8                SystemClock_Config
+                0x080018bc       0xd4 ./Core/Src/main.o
+                0x080018bc                SystemClock_Config
  .text.MX_I2C1_Init
-                0x0800198c       0x5c ./Core/Src/main.o
+                0x08001990       0x5c ./Core/Src/main.o
  .text.MX_TIM2_Init
-                0x080019e8       0x98 ./Core/Src/main.o
+                0x080019ec       0x98 ./Core/Src/main.o
  .text.MX_TIM3_Init
-                0x08001a80       0xec ./Core/Src/main.o
+                0x08001a84       0xec ./Core/Src/main.o
  .text.MX_TIM4_Init
-                0x08001b6c       0xec ./Core/Src/main.o
+                0x08001b70       0xec ./Core/Src/main.o
  .text.MX_USART3_UART_Init
-                0x08001c58       0x54 ./Core/Src/main.o
+                0x08001c5c       0x54 ./Core/Src/main.o
  .text.MX_DMA_Init
-                0x08001cac       0x40 ./Core/Src/main.o
+                0x08001cb0       0x40 ./Core/Src/main.o
  .text.MX_GPIO_Init
-                0x08001cec      0x1b8 ./Core/Src/main.o
+                0x08001cf0      0x1b8 ./Core/Src/main.o
  .text.Error_Handler
-                0x08001ea4        0xc ./Core/Src/main.o
-                0x08001ea4                Error_Handler
+                0x08001ea8        0xc ./Core/Src/main.o
+                0x08001ea8                Error_Handler
  .text.HAL_MspInit
-                0x08001eb0       0x50 ./Core/Src/stm32f4xx_hal_msp.o
-                0x08001eb0                HAL_MspInit
+                0x08001eb4       0x50 ./Core/Src/stm32f4xx_hal_msp.o
+                0x08001eb4                HAL_MspInit
  .text.HAL_I2C_MspInit
-                0x08001f00       0xf4 ./Core/Src/stm32f4xx_hal_msp.o
-                0x08001f00                HAL_I2C_MspInit
+                0x08001f04       0xf4 ./Core/Src/stm32f4xx_hal_msp.o
+                0x08001f04                HAL_I2C_MspInit
  .text.HAL_TIM_Base_MspInit
-                0x08001ff4       0xa4 ./Core/Src/stm32f4xx_hal_msp.o
-                0x08001ff4                HAL_TIM_Base_MspInit
+                0x08001ff8       0xa4 ./Core/Src/stm32f4xx_hal_msp.o
+                0x08001ff8                HAL_TIM_Base_MspInit
  .text.HAL_TIM_MspPostInit
-                0x08002098       0xc4 ./Core/Src/stm32f4xx_hal_msp.o
-                0x08002098                HAL_TIM_MspPostInit
+                0x0800209c       0xc4 ./Core/Src/stm32f4xx_hal_msp.o
+                0x0800209c                HAL_TIM_MspPostInit
  .text.HAL_UART_MspInit
-                0x0800215c       0xa0 ./Core/Src/stm32f4xx_hal_msp.o
-                0x0800215c                HAL_UART_MspInit
+                0x08002160       0xa0 ./Core/Src/stm32f4xx_hal_msp.o
+                0x08002160                HAL_UART_MspInit
  .text.NMI_Handler
-                0x080021fc        0x8 ./Core/Src/stm32f4xx_it.o
-                0x080021fc                NMI_Handler
+                0x08002200        0x8 ./Core/Src/stm32f4xx_it.o
+                0x08002200                NMI_Handler
  .text.HardFault_Handler
-                0x08002204        0x8 ./Core/Src/stm32f4xx_it.o
-                0x08002204                HardFault_Handler
+                0x08002208        0x8 ./Core/Src/stm32f4xx_it.o
+                0x08002208                HardFault_Handler
  .text.MemManage_Handler
-                0x0800220c        0x8 ./Core/Src/stm32f4xx_it.o
-                0x0800220c                MemManage_Handler
+                0x08002210        0x8 ./Core/Src/stm32f4xx_it.o
+                0x08002210                MemManage_Handler
  .text.BusFault_Handler
-                0x08002214        0x8 ./Core/Src/stm32f4xx_it.o
-                0x08002214                BusFault_Handler
+                0x08002218        0x8 ./Core/Src/stm32f4xx_it.o
+                0x08002218                BusFault_Handler
  .text.UsageFault_Handler
-                0x0800221c        0x8 ./Core/Src/stm32f4xx_it.o
-                0x0800221c                UsageFault_Handler
+                0x08002220        0x8 ./Core/Src/stm32f4xx_it.o
+                0x08002220                UsageFault_Handler
  .text.SVC_Handler
-                0x08002224        0xe ./Core/Src/stm32f4xx_it.o
-                0x08002224                SVC_Handler
+                0x08002228        0xe ./Core/Src/stm32f4xx_it.o
+                0x08002228                SVC_Handler
  .text.DebugMon_Handler
-                0x08002232        0xe ./Core/Src/stm32f4xx_it.o
-                0x08002232                DebugMon_Handler
+                0x08002236        0xe ./Core/Src/stm32f4xx_it.o
+                0x08002236                DebugMon_Handler
  .text.PendSV_Handler
-                0x08002240        0xe ./Core/Src/stm32f4xx_it.o
-                0x08002240                PendSV_Handler
+                0x08002244        0xe ./Core/Src/stm32f4xx_it.o
+                0x08002244                PendSV_Handler
  .text.SysTick_Handler
-                0x0800224e        0xc ./Core/Src/stm32f4xx_it.o
-                0x0800224e                SysTick_Handler
+                0x08002252        0xc ./Core/Src/stm32f4xx_it.o
+                0x08002252                SysTick_Handler
  .text.EXTI1_IRQHandler
-                0x0800225a        0xe ./Core/Src/stm32f4xx_it.o
-                0x0800225a                EXTI1_IRQHandler
+                0x0800225e        0xe ./Core/Src/stm32f4xx_it.o
+                0x0800225e                EXTI1_IRQHandler
  .text.DMA1_Stream0_IRQHandler
-                0x08002268       0x14 ./Core/Src/stm32f4xx_it.o
-                0x08002268                DMA1_Stream0_IRQHandler
- *fill*         0x0800227c        0x4 
+                0x0800226c       0x14 ./Core/Src/stm32f4xx_it.o
+                0x0800226c                DMA1_Stream0_IRQHandler
  .text.TIM2_IRQHandler
                 0x08002280      0x2b4 ./Core/Src/stm32f4xx_it.o
                 0x08002280                TIM2_IRQHandler

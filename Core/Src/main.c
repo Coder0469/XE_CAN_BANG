@@ -141,8 +141,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle,1.5, 0.5, 1.5,CalSpeedTime, Setpoint, -2, 2, 1);
-	PID_Init(&PID_angle,1, 1, 0,CalSpeedTime, Setpoint, -2, 2, 1);
+	PID_Init(&PID_angle,0.8, 0, 0,CalSpeedTime, Setpoint, -2, 2, 1);
 	PID_Init(&PID_speed, 75, 5, 40, CalSpeedTime, 1, -100, 100, 1);
 
 //	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
