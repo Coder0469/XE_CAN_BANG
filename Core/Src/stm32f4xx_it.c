@@ -236,66 +236,90 @@ void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
 	MPU6050_Read_Data(&Raw);
-
-
-	float max_dc = 100;
-
 	DCMotor_CalculateSpeed(&MotorA, CalSpeedTime);
 	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
 	curr_speed = (MotorA.speed + MotorB.speed)/2;
 
-	float angle_acc = atan2f(Raw.Ax, Raw.Az)*57.2957;
+	float max_dc = 90;
+	float angle_acc = atan2f(Raw.Ax, Raw.Az);
+	angle = 0.3 * (angle + Raw.Gy * CalSpeedTime/1000)+ 0.7* angle_acc*57.2957795;
 
-	angle = 0 * (angle + Raw.Gy * CalSpeedTime/1000)+ 1* angle_acc;
-
-	if (angle_acc >= 40 || angle_acc <= -40){
-		PID_angle.OutMax = 2;
-		PID_angle.OutMin = -2;
-	}
-	else{
-		PID_angle.OutMax = 1;
-		PID_angle.OutMin = -1;
-	}
 
 	float a = PID_Calculate(&PID_angle, angle, 0,0);
 
 	PID_speed.Setpoint = a;
-
+	prev_angle = angle;
 	float t = PID_Calculate(&PID_speed, curr_speed,0,0);
-
-//		if(angle_acc <= Setpoint + Deadzone2  && angle_acc >= -Setpoint - Deadzone2) max_dc = 50;
-//	if(angle_acc <= Setpoint + Deadzone1  && angle_acc >= -Setpoint - Deadzone1) max_dc= 60;
-//	if(angle_acc <= Setpoint + Deadzone0  && angle_acc >= -Setpoint - Deadzone0) max_dc = 40;
-	if(angle_acc <= Setpoint + Deadzone3  && angle_acc >= -Setpoint - Deadzone3){
-		max_dc = 0;
-	}
-
-//	if(angle_acc >= 0.5) t = 100;
-//	else if (angle_acc <= -0.5) t = -100;
-
 	int direction = 0;
-
 
 	if(t < 0){
 		direction = BACKWARD;
 	}
 	else{
 		direction = FORWARD;
-
 	}
-	if(t < 0) t = -t;
-	if(t > max_dc) t = max_dc;
-//
 
-//	t = 100;
+
+//	t = t-10;
+
+	if(t < 0) t = -t;
+	if(angle <= Setpoint+Deadzone3  && angle >= -Setpoint-Deadzone3){
+		t = 0;
+	}
+
+//	else if(angle >= Setpoint + Deadzone2  || angle <= -Setpoint - Deadzone2) {
+//		t = 90;
+//		for(int i = 0 ; i < 1000 ; i++){
+//			DCMotor_Set_Speed(&MotorB, (uint32_t) t);
+//			DCMotor_Set_Speed(&MotorA, (uint32_t) t);
+//			DCMotor_Run(&MotorB, direction);
+//			DCMotor_Run(&MotorA, direction);
+//		}
+//
+//	}
 //	direction = FORWARD;
-	sprintf(msg,"spe: %.2f dc: %d angle: %.2f \r\n",
-				curr_speed*100,(uint32_t)t,angle);
+//	t = 100;S
+//	float buff = 10*sin(angle_acc);
+//	if (buff < 0) buff = -buff;
+//	t = t + buff;
+	if(t > max_dc) t = max_dc;
+	if(t < 5) t = 0;
+	sprintf(msg,"time: %d spe: %.2f dc: %d angle: %.2f a:%.2f \r\n",
+				HAL_GetTick(),curr_speed*100,(uint32_t)t,angle,a);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
 	DCMotor_Set_Speed(&MotorA, (uint32_t) t);
 	DCMotor_Run(&MotorB, direction);
 	DCMotor_Run(&MotorA, direction);
+
+
+
+
+
+
+
+
+
+
+
+
+//	if(angle_acc <= Setpoint + Deadzone1  && angle_acc >= -Setpoint - Deadzone1) max_dc= 60;
+//	if(angle_acc <= Setpoint + Deadzone0  && angle_acc >= -Setpoint - Deadzone0) max_dc = 40;
+
+//	if(angle_acc >= 0.5) t = 100;
+//	else if (angle_acc <= -0.5) t = -100;
+
+
+//	t = t*t;
+
+//	if(angle_acc >= Setpoint + 6 || angle_acc <= -Setpoint-6) t = 100;
+
+//
+
+
+
+
+
 
 
 
