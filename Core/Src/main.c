@@ -82,20 +82,31 @@ float curr_speed = 0;
 float sampling_time = 0;
 int count = 0;
 int count0 = 0;
+int prev_dc = 0;
 
-float angle = 2;
+float angle = 0;
 float Gyro_angle = 0;
 float prev_angle = 0;
 
 float total_Az = 0;
 float total_Ax = 0;
 float total_Gy = 0;
+float total_speed = 0;
 
 float Setpoint = 0;
-float Deadzone3 = 5;
+float Deadzone3 = 0;
+float Deadzone2 = 16;
 float Deadzone0 = 15;
 float Deadzone1 = 30;
-float Deadzone2 = 10;
+
+float Kp_speed = 10;
+float Ki_speed = 2;
+float Kd_speed = 1;
+
+float Kp_angle = 0.12;
+float Ki_angle = 0;
+float Kd_angle = 0;
+
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
@@ -141,8 +152,9 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle,0.8, 0, 0,CalSpeedTime, Setpoint, -2, 2, 1);
-	PID_Init(&PID_speed, 75, 5, 40, CalSpeedTime, 1, -100, 100, 1);
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -2.5, 2.5, 1);
+
+	PID_Init(&PID_speed, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, 1, -100, 100, 1);
 
 //	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
 
@@ -197,7 +209,6 @@ int main(void)
 
   while (1)
   {
-
 
     /* USER CODE END WHILE */
 
@@ -306,7 +317,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 8399;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 19;
+  htim2.Init.Period = 9;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
