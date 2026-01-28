@@ -12,6 +12,8 @@ extern I2C_HandleTypeDef hi2c1;
 #define WHO_AM_I_REG          0x75
 #define PWR_MGMT_1_REG        0x6B
 #define ACCEL_XOUT_H_REG      0x3B
+#define GYRO_XOUT_H_REG 	  0x43
+
 #define timeOut 1000
 
 typedef struct {
@@ -39,9 +41,18 @@ extern uint8_t TxBufferLen;
 extern char msg[64];
 extern uint16_t samples;
 extern float gyro_x_offset, gyro_y_offset, gyro_z_offset;
+extern uint8_t calibration_done;
 extern float angle_roll;
+extern float angle_pitch; // Góc sau khi lọc
+extern float accel_roll;
+extern float accel_pitch; // Góc tính từ gia tốc
+extern float accel_roll_filtered;
+extern float accel_pitch_filtered;
 extern float alpha;
+extern float accel_alpha;
 
 void MPU6050_Init(void);
 
 void MPU6050_Read_Data(MPU6050_Raw *Raw);
+
+void MPU6050_Process_Angle(MPU6050_Raw *Data);
