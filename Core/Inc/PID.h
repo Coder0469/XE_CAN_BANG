@@ -1,3 +1,4 @@
+#include "stm32f4xx_hal.h"
 typedef struct {
     float Kp;         // Proportional gain
     float Ki;         // Integral gain
@@ -9,6 +10,7 @@ typedef struct {
     float OutMin;     // Minimum output limit
     float OutMax;     // Maximum output limit
     int AntiWindup;   // Anti-windup flag (0 or 1)
+    uint32_t prev_time;
 } PID_Param_t;
 
 // PID Initialization

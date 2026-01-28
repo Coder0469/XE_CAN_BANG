@@ -235,68 +235,68 @@ void DMA1_Stream0_IRQHandler(void)
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
+
 	MPU6050_Read_Data(&Raw);
-
-
-	float max_dc = 100;
-
+	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
+	angle = angle_pitch;  // Lấy góc pitch đã được lọc
+	
 	DCMotor_CalculateSpeed(&MotorA, CalSpeedTime);
 	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
 	curr_speed = (MotorA.speed + MotorB.speed)/2;
 
-	float angle_acc = atan2f(Raw.Ax, Raw.Az)*57.2957;
-
-	angle = 0 * (angle + Raw.Gy * CalSpeedTime/1000)+ 1* angle_acc;
-
-	if (angle_acc >= 40 || angle_acc <= -40){
-		PID_angle.OutMax = 2;
-		PID_angle.OutMin = -2;
+	float max_dc = 80;
+	if((prev_angle > Setpoint && angle <= Setpoint) || (prev_angle < Setpoint && angle >= Setpoint)){
+		PID_angle.IntegralSum = 0;
 	}
-	else{
-		PID_angle.OutMax = 1;
-		PID_angle.OutMin = -1;
-	}
+//	angle = angle_acc;
 
+//	else{
+//		PID_angle.Ki = 19;
+//		PID_angle.OutMax = 20;
+//		PID_angle.OutMin = -20;
+//	}
+//	if(angle >= Setpoint + 10 || angle <= -Setpoint - 10){
+//		Kp_angle = 6;
+//		Ki_angle = 40;
+//		Kd_angle = 0.56;
+//	}
+//	else{
+//		Kp_angle = 4.5;
+//		Ki_angle = 20;
+//		Kd_angle = 0.6;
+//	}
+//	else{
+//		PID_angle.Ki = 15;
+//	}
+	if(angle <= Setpoint + 0.5 && angle >= Setpoint - 0.5){
+		PID_angle.IntegralSum = 0;
+	}
 	float a = PID_Calculate(&PID_angle, angle, 0,0);
-
-	PID_speed.Setpoint = a;
-
-	float t = PID_Calculate(&PID_speed, curr_speed,0,0);
-
-//		if(angle_acc <= Setpoint + Deadzone2  && angle_acc >= -Setpoint - Deadzone2) max_dc = 50;
-//	if(angle_acc <= Setpoint + Deadzone1  && angle_acc >= -Setpoint - Deadzone1) max_dc= 60;
-//	if(angle_acc <= Setpoint + Deadzone0  && angle_acc >= -Setpoint - Deadzone0) max_dc = 40;
-	if(angle_acc <= Setpoint + Deadzone3  && angle_acc >= -Setpoint - Deadzone3){
-		max_dc = 0;
+	prev_angle = angle;
+	float t = a;
+	if(angle <= Setpoint + 1 && angle >= Setpoint - 1){
+//		t = 0;
 	}
-
-//	if(angle_acc >= 0.5) t = 100;
-//	else if (angle_acc <= -0.5) t = -100;
-
 	int direction = 0;
 
-
 	if(t < 0){
-		direction = BACKWARD;
+		direction = FORWARD;
 	}
 	else{
-		direction = FORWARD;
-
+		direction = BACKWARD;
 	}
-	if(t < 0) t = -t;
-	if(t > max_dc) t = max_dc;
-//
 
-//	t = 100;
-//	direction = FORWARD;
-	sprintf(msg,"spe: %.2f dc: %d angle: %.2f \r\n",
-				curr_speed*100,(uint32_t)t,angle);
+	if(t < 0) t = -t;
+
+	if(t > max_dc) t = max_dc;
+
+	sprintf(msg,"angle: %.2f dc: %d \r\n",
+			angle,(uint32_t)t);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
 	DCMotor_Set_Speed(&MotorA, (uint32_t) t);
 	DCMotor_Run(&MotorB, direction);
 	DCMotor_Run(&MotorA, direction);
-
 
 
 

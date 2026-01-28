@@ -1,6 +1,7 @@
 "./Core/Src/DCMotor.o"
 "./Core/Src/MPU.o"
 "./Core/Src/PID.o"
+"./Core/Src/kalman.o"
 "./Core/Src/main.o"
 "./Core/Src/stm32f4xx_hal_msp.o"
 "./Core/Src/stm32f4xx_it.o"

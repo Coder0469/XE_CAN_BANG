@@ -64,8 +64,8 @@ all: main-build
 main-build: DCMotor.elf secondary-outputs
 
 # Tool invocations
-DCMotor.elf DCMotor.map: $(OBJS) $(USER_OBJS) E:\workk\Thietkehethongnhung\DCMotor\STM32F407VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "DCMotor.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"E:\workk\Thietkehethongnhung\DCMotor\STM32F407VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="DCMotor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+DCMotor.elf DCMotor.map: $(OBJS) $(USER_OBJS) E:\work\DCMotor\ (1)\DCMotor\STM32F407VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "DCMotor.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"E:\work\DCMotor (1)\DCMotor\STM32F407VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="DCMotor.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

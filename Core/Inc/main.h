@@ -36,6 +36,7 @@ extern "C" {
 #include "MPU.h"
 #include <math.h>
 #include <string.h>
+#include "kalman.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -50,6 +51,7 @@ extern float sampling_time;
 extern float angle;
 extern int count;
 extern int count0;
+extern int prev_dc;
 extern float Setpoint;
 extern float Deadzone0;
 extern float Deadzone1;
@@ -60,6 +62,15 @@ extern float total_Az;
 extern float total_Gy;
 extern float Gyro_angle;
 extern float prev_angle;
+extern float total_speed;
+extern float Kp_speed;
+extern float Ki_speed;
+extern float Kd_speed;
+extern float Kp_angle;
+extern float Ki_angle;
+extern float Kd_angle;
+extern float prev_speed;
+extern Kalman_t kalman;
 
 /* USER CODE END ET */
 
@@ -85,7 +96,7 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-#define CalSpeedTime 2
+#define CalSpeedTime 0.01f
 
 /* USER CODE END Private defines */
 

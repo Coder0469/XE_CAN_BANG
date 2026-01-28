@@ -24,7 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
 #include "stm32f4xx_it.h"
-
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -82,20 +82,35 @@ float curr_speed = 0;
 float sampling_time = 0;
 int count = 0;
 int count0 = 0;
+int prev_dc = 0;
 
-float angle = 2;
+float angle = 0;
 float Gyro_angle = 0;
 float prev_angle = 0;
+float prev_speed = 0;
 
 float total_Az = 0;
 float total_Ax = 0;
 float total_Gy = 0;
+float total_speed = 0;
 
-float Setpoint = 0;
-float Deadzone3 = 5;
+float Setpoint = 2;
+float Deadzone3 = 2;
+float Deadzone2 = 16;
 float Deadzone0 = 15;
 float Deadzone1 = 30;
-float Deadzone2 = 10;
+
+float Kp_speed = 0;
+float Ki_speed = 0;
+float Kd_speed = 0;
+
+float Kp_angle = 6.5;
+float Ki_angle = 2;
+float Kd_angle = 0.5;
+
+Kalman_t kalman;
+
+
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
@@ -141,8 +156,11 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle,0.8, 0, 0,CalSpeedTime, Setpoint, -2, 2, 1);
-	PID_Init(&PID_speed, 75, 5, 40, CalSpeedTime, 1, -100, 100, 1);
+	Kalman_Init(&kalman);
+
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -30, 30, 1);
+
+//	PID_Init(&PID_speed, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, 0, -100, 100, 1);
 
 //	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
 
@@ -189,7 +207,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-
+//  char str[10];
 //  DCMotor_Set_Speed(&MotorA, 100);
 
 
@@ -198,10 +216,12 @@ int main(void)
   while (1)
   {
 
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+//	  sprintf(str,"%d \n", HAL_GetTick());
+//	  CDC_Transmit_FS((uint8_t*)str, strlen(str));
+//	  HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
@@ -267,13 +287,13 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
   hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_ENABLE;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
   hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
   if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
@@ -306,7 +326,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 8399;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 19;
+  htim2.Init.Period = 99;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)

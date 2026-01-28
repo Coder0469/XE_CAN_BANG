@@ -1,2 +1,3 @@
-../Core/Src/MPU.c:15:6:MPU6050_Init	2
-../Core/Src/MPU.c:43:6:MPU6050_Read_Data	4
+../Core/Src/MPU.c:25:6:MPU6050_Process_Angle	5
+../Core/Src/MPU.c:68:6:MPU6050_Init	2
+../Core/Src/MPU.c:106:6:MPU6050_Read_Data	4

@@ -16,6 +16,7 @@ void PID_Init(PID_Param_t *pid, float Kp, float Ki, float Kd,
     pid->OutMin = OutMin;
     pid->OutMax = OutMax;
     pid->AntiWindup = AntiWindup;
+    pid->prev_time = 0;
 }
 void PID_SetSamplingTime(PID_Param_t *pid,float Ts){
 	pid->Ts = Ts;
@@ -27,11 +28,10 @@ void PID_SetSetPoint(PID_Param_t *pid,float Setpoint){
 float PID_Calculate(PID_Param_t *pid, float Input,float prev_angle,int isAngle) {
     float Error = pid->Setpoint - Input;
     float Proportional = pid->Kp * Error;
-
-    pid->IntegralSum += Error * pid->Ts;
+    pid->IntegralSum +=  Error  * pid->Ts;
     if (pid->AntiWindup) { // Basic anti-windup
         if (pid->IntegralSum > pid->OutMax) pid->IntegralSum = pid->OutMax;
-        if (pid->IntegralSum < pid->OutMin) pid->IntegralSum = pid->OutMin;
+        else if (pid->IntegralSum < pid->OutMin) pid->IntegralSum = pid->OutMin;
     }
     float Integral = pid->Ki * pid->IntegralSum;
     float Derivative;
@@ -43,14 +43,13 @@ float PID_Calculate(PID_Param_t *pid, float Input,float prev_angle,int isAngle) 
     	pid->PreviousError = Error;
     }
 
-
     float Output = Proportional + Integral + Derivative;
 
     // Output clamping
-    if(pid->AntiWindup){
-        if (Output > pid->OutMax) Output = pid->OutMax;
-        if (Output < pid->OutMin) Output = pid->OutMin;
-    }
+//    if(pid->AntiWindup){
+//        if (Output > pid->OutMax) Output = pid->OutMax;
+//        else if (Output < pid->OutMin) Output = pid->OutMin;
+//    }
 
 
     return Output;
