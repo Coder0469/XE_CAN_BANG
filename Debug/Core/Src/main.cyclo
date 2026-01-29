@@ -11,5 +11,5 @@
 ../Core/Src/main.c:543:13:MX_DMA_Init	1
 ../Core/Src/main.c:561:13:MX_GPIO_Init	1
 ../Core/Src/main.c:645:6:StartTask01	1
-../Core/Src/main.c:666:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/main.c:684:6:Error_Handler	1
+../Core/Src/main.c:665:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:683:6:Error_Handler	1

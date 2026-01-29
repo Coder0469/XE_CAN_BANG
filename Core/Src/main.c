@@ -103,9 +103,9 @@ float Kp_speed = 0;
 float Ki_speed = 0;
 float Kd_speed = 0;
 
-float Kp_angle = 12;
+float Kp_angle = 20;
 float Ki_angle = 150;
-float Kd_angle = 0.2;
+float Kd_angle = 0.15;
 
 uint8_t rx_data;
 
@@ -645,7 +645,6 @@ static void MX_GPIO_Init(void)
 void StartTask01(void const * argument)
 {
   /* init code for USB_DEVICE */
-//  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)

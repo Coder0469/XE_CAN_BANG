@@ -2604,7 +2604,7 @@ void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackTy
  8001a54:	200003c0 	.word	0x200003c0
 
 08001a58 <USB_CDC_RxHandler>:
-float Kd_angle = 0.2;
+float Kd_angle = 0.15;
 
 uint8_t rx_data;
 
@@ -3975,7 +3975,7 @@ void StartTask01(void const * argument)
  8002386:	b082      	sub	sp, #8
  8002388:	af00      	add	r7, sp, #0
  800238a:	6078      	str	r0, [r7, #4]
-//  MX_USB_DEVICE_Init();
+  /* init code for USB_DEVICE */
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
