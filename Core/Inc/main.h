@@ -52,7 +52,7 @@ extern float angle;
 extern int count;
 extern int count0;
 extern int prev_dc;
-extern float Setpoint;
+extern volatile float Setpoint;
 extern float Deadzone0;
 extern float Deadzone1;
 extern float Deadzone2;

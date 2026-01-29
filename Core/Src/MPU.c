@@ -13,7 +13,7 @@ float angle_roll = 0, angle_pitch = 0; // Góc sau khi lọc
 float accel_roll = 0, accel_pitch = 0; // Góc tính từ gia tốc
 float accel_roll_filtered = 0, accel_pitch_filtered = 0; // Góc accelerometer sau khi lọc
 uint32_t last_time = 0;                // Để tính dt
-float alpha = 0.95;                    // Hệ số lọc complementary (thường từ 0.95 - 0.99)
+float alpha = 0.98;                    // Hệ số lọc complementary (thường từ 0.95 - 0.99)
 float accel_alpha = 0.5;              // Hệ số lọc cho accelerometer (giảm nhiễu)
 
 // Biến bù sai số (Calibration) - PHẢI bắt đầu từ 0

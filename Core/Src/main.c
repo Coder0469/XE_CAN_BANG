@@ -96,7 +96,7 @@ float total_Ax = 0;
 float total_Gy = 0;
 float total_speed = 0;
 
-float Setpoint = SETPOINT;
+volatile float Setpoint = SETPOINT;
 
 
 float Kp_speed = 0;
@@ -104,10 +104,11 @@ float Ki_speed = 0;
 float Kd_speed = 0;
 
 float Kp_angle = 25;
-float Ki_angle = 150;
-float Kd_angle = 0.2;
+float Ki_angle = 250;
+float Kd_angle = 0.1;
 
 uint8_t rx_data;
+char debug_msg[30];
 
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
@@ -140,7 +141,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   if (huart->Instance == USART3) // Kiểm tra đúng UART nối module
   {
     // Xử lý ký tự nhận được
-	char debug_msg[30];
 	sprintf(debug_msg, "Received: %c (ASCII: %d)\r\n", rx_data, rx_data);
 	CDC_Transmit_FS((uint8_t*)debug_msg, strlen(debug_msg));
     switch (rx_data) {
@@ -160,7 +160,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     }
 
     // Quan trọng: Phải gọi lại lệnh này để nhận ký tự tiếp theo
-	HAL_UART_Transmit(&huart3, &rx_data, 1, 100);
     HAL_UART_Receive_IT(&huart3, &rx_data, 1);
   }
 }
@@ -168,10 +167,10 @@ void Balance(void){
 	MPU6050_Read_Data(&Raw);
 	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
 	angle = angle_pitch;  // Lấy góc pitch đã được lọc
-
+	PID_angle.Setpoint = Setpoint;
 	float max_dc = 80;
 
-	if(angle >= Setpoint + 30 || angle <= Setpoint - 30){
+	if(angle >= Setpoint + 20 || angle <= Setpoint - 20){
 		PID_angle.IntegralSum = 0;
 		max_dc = 100;
 	}
@@ -213,7 +212,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -20, 20, 1);
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -15, 15, 1);
 
 
 
