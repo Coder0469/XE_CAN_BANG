@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -34,7 +35,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define SETPOINT 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -46,12 +47,12 @@
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 
-TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart3;
 
+osThreadId Task01Handle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -63,8 +64,9 @@ static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_TIM2_Init(void);
 static void MX_USART3_UART_Init(void);
+void StartTask01(void const * argument);
+
 /* USER CODE BEGIN PFP */
 
 
@@ -94,22 +96,18 @@ float total_Ax = 0;
 float total_Gy = 0;
 float total_speed = 0;
 
-float Setpoint = 2;
-float Deadzone3 = 2;
-float Deadzone2 = 16;
-float Deadzone0 = 15;
-float Deadzone1 = 30;
+float Setpoint = SETPOINT;
+
 
 float Kp_speed = 0;
 float Ki_speed = 0;
 float Kd_speed = 0;
 
-float Kp_angle = 6.5;
-float Ki_angle = 2;
-float Kd_angle = 0.5;
+float Kp_angle = 12;
+float Ki_angle = 150;
+float Kd_angle = 0.2;
 
-Kalman_t kalman;
-
+uint8_t rx_data;
 
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
@@ -137,14 +135,72 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	}
 
 }
-//void ReadAngle(){
-//	  MPU6050_Read_Data(&Raw);
-//	  float pitch_acc = atan2f(-Raw.Ax, sqrtf(Raw.Ay*Raw.Ay + Raw.Az*Raw.Az)) * 180.0 / PI;
-//	  sprintf(msg, "A: %.2f %.2f %.2f | G: %.2f %.2f %.2f | Pitch: %.2f\r\n",
-//			  Raw.Ax, Raw.Ay, Raw.Az, Raw.Gx, Raw.Gy, Raw.Gz, pitch_acc);
-//	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
-//	  HAL_Delay(500);
-//}
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart->Instance == USART3) // Kiểm tra đúng UART nối module
+  {
+    // Xử lý ký tự nhận được
+	char debug_msg[30];
+	sprintf(debug_msg, "Received: %c (ASCII: %d)\r\n", rx_data, rx_data);
+	CDC_Transmit_FS((uint8_t*)debug_msg, strlen(debug_msg));
+    switch (rx_data) {
+      case 'F': // Tiến
+        Setpoint = SETPOINT+5; // Tốc độ mục tiêu (PWM hoặc RPM)
+        break;
+      case 'B': // Lùi
+        Setpoint = SETPOINT-5;
+        break;
+      case 'L': // Xoay trái
+        break;
+      case 'R': // Xoay phải
+        break;
+      case '0': // Dừng (khi thả tay trên App)
+        Setpoint = SETPOINT;
+        break;
+    }
+
+    // Quan trọng: Phải gọi lại lệnh này để nhận ký tự tiếp theo
+	HAL_UART_Transmit(&huart3, &rx_data, 1, 100);
+    HAL_UART_Receive_IT(&huart3, &rx_data, 1);
+  }
+}
+void Balance(void){
+	MPU6050_Read_Data(&Raw);
+	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
+	angle = angle_pitch;  // Lấy góc pitch đã được lọc
+
+	float max_dc = 100;
+
+	if(angle >= Setpoint + 30 || angle <= Setpoint - 30){
+		PID_angle.IntegralSum = 0;
+	}
+	float a = PID_Calculate(&PID_angle, angle, 0,0);
+	prev_angle = angle;
+	float t = a;
+
+	int direction = 0;
+
+	if(t < 0){
+		direction = FORWARD;
+	}
+	else{
+		direction = BACKWARD;
+	}
+
+	if(t < 0) t = -t;
+
+	if(t > max_dc) t = max_dc;
+
+	sprintf(msg,"sp: %d angle: %.2f dc: %d \r\n",
+			Setpoint, angle,(uint32_t)t);
+	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
+	DCMotor_Set_Speed(&MotorA, (uint32_t) t);
+	DCMotor_Run(&MotorB, direction);
+	DCMotor_Run(&MotorA, direction);
+	osDelay(10);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -156,13 +212,8 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	Kalman_Init(&kalman);
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -20, 20, 1);
 
-	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -30, 30, 1);
-
-//	PID_Init(&PID_speed, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, 0, -100, 100, 1);
-
-//	HAL_DMA_Start(&hdma_i2c1_rx, SrcAddress, DstAddress, DataLength);
 
 
 
@@ -189,20 +240,50 @@ int main(void)
   MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
-  MX_USB_DEVICE_Init();
   MX_I2C1_Init();
-  MX_TIM2_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  MX_USB_DEVICE_Init();
 //  HAL_TIM_Base_Start_IT(&htim3);
 //  HAL_TIM_Base_Start_IT(&htim4);
-  HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   DCMotor_Init(&MotorA, &htim3, TIM_CHANNEL_1, GPIOA, GPIO_PIN_3, GPIO_PIN_7);
   DCMotor_Init(&MotorB, &htim4, TIM_CHANNEL_1, GPIOD, GPIO_PIN_11, GPIO_PIN_10);
   MPU6050_Init();
+  HAL_UART_Receive_IT(&huart3, &rx_data, 1);
+
   /* USER CODE END 2 */
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* definition and creation of Task01 */
+  osThreadDef(Task01, StartTask01, 3, 0, 512);
+  Task01Handle = osThreadCreate(osThread(Task01), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -302,51 +383,6 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM2_Init(void)
-{
-
-  /* USER CODE BEGIN TIM2_Init 0 */
-
-  /* USER CODE END TIM2_Init 0 */
-
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM2_Init 1 */
-
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 8399;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 99;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM2_Init 2 */
-
-  /* USER CODE END TIM2_Init 2 */
 
 }
 
@@ -484,7 +520,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 9600;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
@@ -512,7 +548,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
 
 }
@@ -590,13 +626,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
@@ -605,6 +634,48 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartTask01 */
+/**
+  * @brief  Function implementing the Task01 thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartTask01 */
+void StartTask01(void const * argument)
+{
+  /* init code for USB_DEVICE */
+//  MX_USB_DEVICE_Init();
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+	  Balance();
+  }
+  /* USER CODE END 5 */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

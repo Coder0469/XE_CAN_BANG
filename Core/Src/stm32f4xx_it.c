@@ -57,8 +57,9 @@
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern DMA_HandleTypeDef hdma_i2c1_rx;
-extern TIM_HandleTypeDef htim2;
 extern UART_HandleTypeDef huart3;
+extern TIM_HandleTypeDef htim1;
+
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -142,19 +143,6 @@ void UsageFault_Handler(void)
 }
 
 /**
-  * @brief This function handles System service call via SWI instruction.
-  */
-void SVC_Handler(void)
-{
-  /* USER CODE BEGIN SVCall_IRQn 0 */
-
-  /* USER CODE END SVCall_IRQn 0 */
-  /* USER CODE BEGIN SVCall_IRQn 1 */
-
-  /* USER CODE END SVCall_IRQn 1 */
-}
-
-/**
   * @brief This function handles Debug monitor.
   */
 void DebugMon_Handler(void)
@@ -167,53 +155,12 @@ void DebugMon_Handler(void)
   /* USER CODE END DebugMonitor_IRQn 1 */
 }
 
-/**
-  * @brief This function handles Pendable request for system service.
-  */
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
-
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
-
-  /* USER CODE END PendSV_IRQn 1 */
-}
-
-/**
-  * @brief This function handles System tick timer.
-  */
-void SysTick_Handler(void)
-{
-  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
-
-  /* USER CODE END SysTick_IRQn 1 */
-}
-
 /******************************************************************************/
 /* STM32F4xx Peripheral Interrupt Handlers                                    */
 /* Add here the Interrupt Handlers for the used peripherals.                  */
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
-
-/**
-  * @brief This function handles EXTI line1 interrupt.
-  */
-void EXTI1_IRQHandler(void)
-{
-  /* USER CODE BEGIN EXTI1_IRQn 0 */
-
-  /* USER CODE END EXTI1_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
-  /* USER CODE BEGIN EXTI1_IRQn 1 */
-
-  /* USER CODE END EXTI1_IRQn 1 */
-}
 
 /**
   * @brief This function handles DMA1 stream0 global interrupt.
@@ -230,81 +177,17 @@ void DMA1_Stream0_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles TIM2 global interrupt.
+  * @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
   */
-void TIM2_IRQHandler(void)
+void TIM1_UP_TIM10_IRQHandler(void)
 {
-  /* USER CODE BEGIN TIM2_IRQn 0 */
+  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
 
-	MPU6050_Read_Data(&Raw);
-	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
-	angle = angle_pitch;  // Lấy góc pitch đã được lọc
-	
-	DCMotor_CalculateSpeed(&MotorA, CalSpeedTime);
-	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
-	curr_speed = (MotorA.speed + MotorB.speed)/2;
+  /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
 
-	float max_dc = 80;
-	if((prev_angle > Setpoint && angle <= Setpoint) || (prev_angle < Setpoint && angle >= Setpoint)){
-		PID_angle.IntegralSum = 0;
-	}
-//	angle = angle_acc;
-
-//	else{
-//		PID_angle.Ki = 19;
-//		PID_angle.OutMax = 20;
-//		PID_angle.OutMin = -20;
-//	}
-//	if(angle >= Setpoint + 10 || angle <= -Setpoint - 10){
-//		Kp_angle = 6;
-//		Ki_angle = 40;
-//		Kd_angle = 0.56;
-//	}
-//	else{
-//		Kp_angle = 4.5;
-//		Ki_angle = 20;
-//		Kd_angle = 0.6;
-//	}
-//	else{
-//		PID_angle.Ki = 15;
-//	}
-	if(angle <= Setpoint + 0.5 && angle >= Setpoint - 0.5){
-		PID_angle.IntegralSum = 0;
-	}
-	float a = PID_Calculate(&PID_angle, angle, 0,0);
-	prev_angle = angle;
-	float t = a;
-	if(angle <= Setpoint + 1 && angle >= Setpoint - 1){
-//		t = 0;
-	}
-	int direction = 0;
-
-	if(t < 0){
-		direction = FORWARD;
-	}
-	else{
-		direction = BACKWARD;
-	}
-
-	if(t < 0) t = -t;
-
-	if(t > max_dc) t = max_dc;
-
-	sprintf(msg,"angle: %.2f dc: %d \r\n",
-			angle,(uint32_t)t);
-	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
-	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
-	DCMotor_Set_Speed(&MotorA, (uint32_t) t);
-	DCMotor_Run(&MotorB, direction);
-	DCMotor_Run(&MotorA, direction);
-
-
-
-  /* USER CODE END TIM2_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim2);
-  /* USER CODE BEGIN TIM2_IRQn 1 */
-
-  /* USER CODE END TIM2_IRQn 1 */
+  /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }
 
 /**
@@ -319,20 +202,6 @@ void USART3_IRQHandler(void)
   /* USER CODE BEGIN USART3_IRQn 1 */
 
   /* USER CODE END USART3_IRQn 1 */
-}
-
-/**
-  * @brief This function handles EXTI line[15:10] interrupts.
-  */
-void EXTI15_10_IRQHandler(void)
-{
-  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
-
-  /* USER CODE END EXTI15_10_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
-  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
-
-  /* USER CODE END EXTI15_10_IRQn 1 */
 }
 
 /**
