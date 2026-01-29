@@ -103,9 +103,9 @@ float Kp_speed = 0;
 float Ki_speed = 0;
 float Kd_speed = 0;
 
-float Kp_angle = 20;
+float Kp_angle = 25;
 float Ki_angle = 150;
-float Kd_angle = 0.15;
+float Kd_angle = 0.2;
 
 uint8_t rx_data;
 
@@ -169,10 +169,11 @@ void Balance(void){
 	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
 	angle = angle_pitch;  // Lấy góc pitch đã được lọc
 
-	float max_dc = 100;
+	float max_dc = 80;
 
 	if(angle >= Setpoint + 30 || angle <= Setpoint - 30){
 		PID_angle.IntegralSum = 0;
+		max_dc = 100;
 	}
 	float a = PID_Calculate(&PID_angle, angle, 0,0);
 	prev_angle = angle;
