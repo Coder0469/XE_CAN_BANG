@@ -104,7 +104,7 @@ float Ki_speed = 0;
 float Kd_speed = 0;
 
 float Kp_angle = 25;
-float Ki_angle = 250;
+float Ki_angle = 500;
 float Kd_angle = 0.1;
 
 uint8_t rx_data;
@@ -144,15 +144,19 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	sprintf(debug_msg, "Received: %c (ASCII: %d)\r\n", rx_data, rx_data);
 	CDC_Transmit_FS((uint8_t*)debug_msg, strlen(debug_msg));
     switch (rx_data) {
-      case 'F': // Tiến
-        Setpoint = SETPOINT+5; // Tốc độ mục tiêu (PWM hoặc RPM)
+      case 'M': // Tiến
+    	if(Setpoint < SETPOINT+2.5){
+        	Setpoint += 0.2;
+    	}
         break;
-      case 'B': // Lùi
-        Setpoint = SETPOINT-5;
+      case 'N': // Lùi
+      	if(Setpoint > SETPOINT-2.5){
+          	Setpoint -= 0.2;
+      	}
         break;
-      case 'L': // Xoay trái
+      case 'O': // Xoay trái
         break;
-      case 'R': // Xoay phải
+      case 'P': // Xoay phải
         break;
       case '0': // Dừng (khi thả tay trên App)
         Setpoint = SETPOINT;
@@ -191,7 +195,7 @@ void Balance(void){
 
 	if(t > max_dc) t = max_dc;
 
-	sprintf(msg,"sp: %d angle: %.2f dc: %d \r\n",
+	sprintf(msg,"sp: %.2f angle: %.2f dc: %d \r\n",
 			Setpoint, angle,(uint32_t)t);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
@@ -520,7 +524,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 9600;
+  huart3.Init.BaudRate = 115200;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
