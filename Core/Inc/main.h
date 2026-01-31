@@ -99,7 +99,7 @@ void Balance(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-#define CalSpeedTime 0.01f
+#define CalSpeedTime 0.005f
 
 /* USER CODE END Private defines */
 
