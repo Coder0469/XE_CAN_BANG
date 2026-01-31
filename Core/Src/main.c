@@ -112,7 +112,7 @@ float Ki_speed = 0;
 float Kd_speed = 0;
 
 float Kp_angle = 20;
-float Ki_angle = 50;
+float Ki_angle = 100;
 float Kd_angle = 0.2;
 
 uint8_t rx_data;
@@ -222,7 +222,7 @@ void CalculateAngle(void){
 
 }
 void Balance(void){
-	pwm = PID_Calculate(&PID_angle, angle, 0,0);
+	pwm = PID_Calculate(&PID_angle, angle);
 	prev_angle = angle;
 	int direction = 0;
 
@@ -255,7 +255,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -10, 10, 1);
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -100, 100, 1);
 
 
 

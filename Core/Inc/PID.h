@@ -19,7 +19,7 @@ void PID_Init(PID_Param_t *pid, float Kp, float Ki, float Kd, float Ts,
 
 
 // PID Calculation function
-float PID_Calculate(PID_Param_t *pid, float Input,float prev_angle, int isAngle);
+float PID_Calculate(PID_Param_t *pid, float Input);
 
 void PID_SetSamplingTime(PID_Param_t *pid,float Ts);
 
