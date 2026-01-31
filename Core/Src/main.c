@@ -119,6 +119,7 @@ uint8_t rx_data;
 char debug_msg[30];
 float pwm;
 float max_dc;
+int8_t move_state = 0;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
@@ -154,14 +155,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	CDC_Transmit_FS((uint8_t*)debug_msg, strlen(debug_msg));
     switch (rx_data) {
       case 'M': // Tiến
-    	if(Setpoint < SETPOINT+2.5){
-        	Setpoint += 0.2;
-    	}
+    	move_state = 1;
         break;
       case 'N': // Lùi
-      	if(Setpoint > SETPOINT-2.5){
-          	Setpoint -= 0.2;
-      	}
+    	move_state = -1;
         break;
       case 'O': // Xoay trái
         break;
@@ -180,6 +177,20 @@ void CalculateAngle(void){
 	MPU6050_Read_Data(&Raw);
 	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
 	angle = angle_pitch;  // Lấy góc pitch đã được lọc
+	//	switch(move_state){
+//	case 1:
+//		Setpoint = Setpoint + 0.4;
+//		if(Setpoint > SETPOINT + 6) Setpoint = SETPOINT + 6;
+//		break;
+//	case -1:
+//		Setpoint = Setpoint - 0.4;
+//		if(Setpoint < SETPOINT - 6) Setpoint = SETPOINT - 6;
+//		break;
+//	default:
+//		if(Setpoint < SETPOINT + 0.3 && Setpoint > SETPOINT - 0.3) Setpoint = SETPOINT;
+//		else if (Setpoint > 0) Setpoint -= 0.2;
+//		else Setpoint +=0.2;
+//	}
 	PID_angle.Setpoint = Setpoint;
 	max_dc = 80;
 
@@ -229,11 +240,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
 	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -35, 35, 1);
-<<<<<<< HEAD
-=======
 
-
->>>>>>> 718e83fa3de58ab90de1e7a8c94b7c6f1c42b5cf
 
 
   /* USER CODE END 1 */
