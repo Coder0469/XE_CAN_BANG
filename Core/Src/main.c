@@ -177,6 +177,7 @@ void CalculateAngle(void){
 	MPU6050_Read_Data(&Raw);
 	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
 	angle = angle_pitch;  // Lấy góc pitch đã được lọc
+<<<<<<< HEAD
 	switch(move_state){
 	case 1:
 		Setpoint = Setpoint + 0.4;
@@ -191,6 +192,22 @@ void CalculateAngle(void){
 		else if (Setpoint > SETPOINT) Setpoint -= 0.1;
 		else if (Setpoint < SETPOINT) Setpoint += 0.1;
 	}
+=======
+	//	switch(move_state){
+//	case 1:
+//		Setpoint = Setpoint + 0.4;
+//		if(Setpoint > SETPOINT + 6) Setpoint = SETPOINT + 6;
+//		break;
+//	case -1:
+//		Setpoint = Setpoint - 0.4;
+//		if(Setpoint < SETPOINT - 6) Setpoint = SETPOINT - 6;
+//		break;
+//	default:
+//		if(Setpoint < SETPOINT + 0.3 && Setpoint > SETPOINT - 0.3) Setpoint = SETPOINT;
+//		else if (Setpoint > 0) Setpoint -= 0.2;
+//		else Setpoint +=0.2;
+//	}
+>>>>>>> 221f0f3aa47355dc1be74693eb27e37503154f3b
 	PID_angle.Setpoint = Setpoint;
 	max_dc = 80;
 
