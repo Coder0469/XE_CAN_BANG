@@ -179,4 +179,3 @@ void MPU6050_Read_Data(MPU6050_Raw *Raw){
 	Raw->Gz = Raw->Gyro_Z_RAW/131.0;
 
 }
-

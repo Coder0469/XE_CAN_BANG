@@ -76,7 +76,10 @@ extern Kalman_t kalman;
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+#define STARTUP 0
+#define BALANCE 1
+#define FALL 2
+#define RECOVER 3
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

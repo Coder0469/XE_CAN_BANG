@@ -47,12 +47,17 @@
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart3;
 
 osThreadId Task01Handle;
+osThreadId Task02Handle;
+osThreadId Task03Handle;
+osSemaphoreId myBinarySem01Handle;
+osSemaphoreId myBinarySem02Handle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -65,7 +70,10 @@ static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_TIM2_Init(void);
 void StartTask01(void const * argument);
+void StartTask02(void const * argument);
+void StartTask03(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -109,7 +117,8 @@ float Kd_angle = 0.1;
 
 uint8_t rx_data;
 char debug_msg[30];
-
+float pwm;
+float max_dc;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
@@ -167,42 +176,45 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     HAL_UART_Receive_IT(&huart3, &rx_data, 1);
   }
 }
-void Balance(void){
+void CalculateAngle(void){
 	MPU6050_Read_Data(&Raw);
 	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
 	angle = angle_pitch;  // Lấy góc pitch đã được lọc
 	PID_angle.Setpoint = Setpoint;
-	float max_dc = 80;
+	max_dc = 80;
 
 	if(angle >= Setpoint + 20 || angle <= Setpoint - 20){
 		PID_angle.IntegralSum = 0;
 		max_dc = 100;
 	}
-	float a = PID_Calculate(&PID_angle, angle, 0,0);
-	prev_angle = angle;
-	float t = a;
+//		sprintf(msg,"sp: %.2f angle: %.2f dc: %d \r\n",
+//				Setpoint, angle,(uint32_t)t);
+	sprintf(msg,"%.2f \r\n",
+				angle);
+	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 
+}
+void Balance(void){
+	pwm = PID_Calculate(&PID_angle, angle, 0,0);
+	prev_angle = angle;
 	int direction = 0;
 
-	if(t < 0){
+	if(pwm < 0){
 		direction = FORWARD;
 	}
 	else{
 		direction = BACKWARD;
 	}
 
-	if(t < 0) t = -t;
+	if(pwm < 0) pwm = -pwm;
 
-	if(t > max_dc) t = max_dc;
+	if(pwm > max_dc) pwm = max_dc;
 
-	sprintf(msg,"sp: %.2f angle: %.2f dc: %d \r\n",
-			Setpoint, angle,(uint32_t)t);
-	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
-	DCMotor_Set_Speed(&MotorB, (uint32_t) t);
-	DCMotor_Set_Speed(&MotorA, (uint32_t) t);
+
+	DCMotor_Set_Speed(&MotorB, (uint32_t) pwm);
+	DCMotor_Set_Speed(&MotorA, (uint32_t) pwm);
 	DCMotor_Run(&MotorB, direction);
 	DCMotor_Run(&MotorA, direction);
-	osDelay(10);
 }
 
 /* USER CODE END 0 */
@@ -216,9 +228,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -15, 15, 1);
-
-
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -35, 35, 1);
 
 
   /* USER CODE END 1 */
@@ -246,6 +256,7 @@ int main(void)
   MX_TIM4_Init();
   MX_I2C1_Init();
   MX_USART3_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   MX_USB_DEVICE_Init();
 //  HAL_TIM_Base_Start_IT(&htim3);
@@ -256,12 +267,21 @@ int main(void)
   DCMotor_Init(&MotorB, &htim4, TIM_CHANNEL_1, GPIOD, GPIO_PIN_11, GPIO_PIN_10);
   MPU6050_Init();
   HAL_UART_Receive_IT(&huart3, &rx_data, 1);
-
+  HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
+  /* definition and creation of myBinarySem01 */
+  osSemaphoreDef(myBinarySem01);
+  myBinarySem01Handle = osSemaphoreCreate(osSemaphore(myBinarySem01), 1);
+
+  /* definition and creation of myBinarySem02 */
+  osSemaphoreDef(myBinarySem02);
+  myBinarySem02Handle = osSemaphoreCreate(osSemaphore(myBinarySem02), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -277,8 +297,16 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of Task01 */
-  osThreadDef(Task01, StartTask01, 3, 0, 512);
+  osThreadDef(Task01, StartTask01, osPriorityRealtime, 0, 512);
   Task01Handle = osThreadCreate(osThread(Task01), NULL);
+
+  /* definition and creation of Task02 */
+  osThreadDef(Task02, StartTask02, osPriorityHigh, 0, 128);
+  Task02Handle = osThreadCreate(osThread(Task02), NULL);
+
+  /* definition and creation of Task03 */
+  osThreadDef(Task03, StartTask03, osPriorityAboveNormal, 0, 128);
+  Task03Handle = osThreadCreate(osThread(Task03), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -332,7 +360,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLM = 25;
   RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
@@ -387,6 +415,51 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 8399;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 100;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
 
 }
 
@@ -649,13 +722,50 @@ static void MX_GPIO_Init(void)
 void StartTask01(void const * argument)
 {
   /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
   {
-	  Balance();
+	  osDelay(1);
   }
   /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_StartTask02 */
+/**
+* @brief Function implementing the Task02 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTask02 */
+void StartTask02(void const * argument)
+{
+  /* USER CODE BEGIN StartTask02 */
+  /* Infinite loop */
+  for(;;)
+  {
+	  osDelay(1);
+  }
+  /* USER CODE END StartTask02 */
+}
+
+/* USER CODE BEGIN Header_StartTask03 */
+/**
+* @brief Function implementing the Task03 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTask03 */
+void StartTask03(void const * argument)
+{
+  /* USER CODE BEGIN StartTask03 */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartTask03 */
 }
 
 /**
@@ -674,6 +784,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM1)
   {
     HAL_IncTick();
+  }
+  if(htim->Instance == TIM2){
+	  CalculateAngle();
+	  Balance();
   }
   /* USER CODE BEGIN Callback 1 */
 
