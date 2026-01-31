@@ -229,6 +229,11 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
 	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -35, 35, 1);
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 718e83fa3de58ab90de1e7a8c94b7c6f1c42b5cf
 
 
   /* USER CODE END 1 */
