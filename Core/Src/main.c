@@ -111,9 +111,9 @@ float Kp_speed = 0;
 float Ki_speed = 0;
 float Kd_speed = 0;
 
-float Kp_angle = 30;
-float Ki_angle = 100;
-float Kd_angle = 0.3;
+float Kp_angle = 20;
+float Ki_angle = 50;
+float Kd_angle = 0.2;
 
 uint8_t rx_data;
 char debug_msg[30];
@@ -177,47 +177,47 @@ void CalculateAngle(void){
 	MPU6050_Read_Data(&Raw);
 	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
 	angle = angle_pitch;  // Lấy góc pitch đã được lọc
-<<<<<<< HEAD
 	switch(move_state){
 	case 1:
+		Setpoint = Setpoint + 0.1;
+		if(Setpoint > SETPOINT + 4) Setpoint = SETPOINT + 4;
+		PID_angle.Ki = 0;
+		break;
+	case -1:
+		Setpoint = Setpoint - 0.1;
+		if(Setpoint < SETPOINT - 4) Setpoint = SETPOINT - 4;
+		PID_angle.Ki = 0;
+		break;
+	default:
+		if(Setpoint < SETPOINT + 0.2 && Setpoint > SETPOINT - 0.2) Setpoint = SETPOINT;
+		else if (Setpoint > SETPOINT) Setpoint -= 0.1;
+		else if (Setpoint < SETPOINT) Setpoint += 0.1;
+//		PID_angle.Kp = 20;
+	}
+		switch(move_state){
+	case 1:
 		Setpoint = Setpoint + 0.4;
-		if(Setpoint > SETPOINT + 6) Setpoint = SETPOINT + 6;
+		if(Setpoint > SETPOINT + 6) Setpoint = SETPOINT + 4;
 		break;
 	case -1:
 		Setpoint = Setpoint - 0.4;
-		if(Setpoint < SETPOINT - 6) Setpoint = SETPOINT - 6;
+		if(Setpoint < SETPOINT - 6) Setpoint = SETPOINT - 4;
 		break;
 	default:
 		if(Setpoint < SETPOINT + 0.3 && Setpoint > SETPOINT - 0.3) Setpoint = SETPOINT;
-		else if (Setpoint > SETPOINT) Setpoint -= 0.1;
-		else if (Setpoint < SETPOINT) Setpoint += 0.1;
+		else if (Setpoint > SETPOINT) Setpoint -= 0.2;
+		else Setpoint +=0.2;
 	}
-=======
-	//	switch(move_state){
-//	case 1:
-//		Setpoint = Setpoint + 0.4;
-//		if(Setpoint > SETPOINT + 6) Setpoint = SETPOINT + 6;
-//		break;
-//	case -1:
-//		Setpoint = Setpoint - 0.4;
-//		if(Setpoint < SETPOINT - 6) Setpoint = SETPOINT - 6;
-//		break;
-//	default:
-//		if(Setpoint < SETPOINT + 0.3 && Setpoint > SETPOINT - 0.3) Setpoint = SETPOINT;
-//		else if (Setpoint > 0) Setpoint -= 0.2;
-//		else Setpoint +=0.2;
-//	}
->>>>>>> 221f0f3aa47355dc1be74693eb27e37503154f3b
 	PID_angle.Setpoint = Setpoint;
-	max_dc = 80;
+	max_dc = 100;
 
 	if(angle >= Setpoint + 20 || angle <= Setpoint - 20){
 		PID_angle.IntegralSum = 0;
-		max_dc = 100;
 	}
 //	sprintf(msg,"sp: %.2f angle: %.2f dc: %d time: %d\r\n",Setpoint, angle,(uint32_t)pwm,HAL_GetTick());
-	sprintf(msg,"%.2f \r\n",
-				angle);
+	DCMotor_CalculateSpeed(&MotorA, CalSpeedTime);
+	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
+	sprintf(msg,"angle: %.2f speed A: %.2f speed B: %.2f\r\n",angle,MotorA.speed, MotorB.speed);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 
 }
@@ -255,7 +255,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -35, 35, 1);
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -10, 10, 1);
 
 
 
@@ -730,6 +730,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
