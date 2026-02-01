@@ -93,13 +93,13 @@ float prev_speed = 0;
 float total_Az = 0;
 float total_Ax = 0;
 float total_Gy = 0;
-float total_speed = 0;
+float max_speed = 3400;
 
 volatile float Setpoint = SETPOINT;
 
 
-float Kp_speed = 0;
-float Ki_speed = 0;
+float Kp_speed = 0.1;
+float Ki_speed = 1;
 float Kd_speed = 0;
 
 float Kp_angle = 20;
@@ -148,18 +148,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     switch (rx_data) {
       case 'M': // Tiến
     	move_state = FORWARD;
-    	control_lock = UNLOCKED;
         break;
       case 'N': // Lùi
     	move_state = BACKWARD;
-    	control_lock = UNLOCKED;
         break;
       case 'O': // Xoay trái
+    	move_state = TURNLEFT;
         break;
       case 'P': // Xoay phải
+    	move_state = TURNRIGHT;
         break;
       case '0': // Dừng (khi thả tay trên App)
-    	move_state = 0;
+    	move_state = STOP;
     	break;
     }
 
@@ -195,7 +195,7 @@ void CalculateAngle(void){
 //	sprintf(msg,"sp: %.2f angle: %.2f dc: %d time: %d\r\n",Setpoint, angle,(uint32_t)pwm,HAL_GetTick());
 	DCMotor_CalculateSpeed(&MotorA, CalSpeedTime);
 	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
-	sprintf(msg,"angle: %.2f speed A: %.2f speed B: %.2f\r\n",angle,MotorA.speed, MotorB.speed);
+	sprintf(msg,"angle: %.2f speed A: %.2f speed B: %.2f dc: %d\r\n",angle,MotorA.speed, MotorB.speed,(uint32_t)pwm);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 
 }
@@ -235,7 +235,7 @@ int main(void)
 
 	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -100, 100, 1);
 
-
+	PID_Init(&PID_speed, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, Setpoint, -100, 100, 1);
 
   /* USER CODE END 1 */
 
@@ -284,14 +284,37 @@ int main(void)
 
 
 
-
+  float pwm_A = 0;
+  float pwm_B = 0;
+  int direction_A = 0;
+  int direction_B = 0;
   while (1)
   {
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
+	  if(control_lock == UNLOCKED){
+		  control_lock = LOCKED;
+		  switch (move_state) {
+			case TURNLEFT:
+				PID_speed.Setpoint = 5;
+				pwm_A = PID_Calculate(&PID_speed, MotorA.speed);
+				if(pwm_A > 100) pwm_A = 100;
+				if(pwm_A < 0){
+					pwm_A = -pwm_A;
+					direction_A = FORWARD;
+				}
+				else{
+					direction_A = BACKWARD;
+				}
+				DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
+				DCMotor_Run(&MotorA, direction_A);
+				break;
+			default:
+				break;
+		}
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -695,6 +718,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
   /* USER CODE BEGIN Callback 1 */
   if(htim->Instance == TIM2){
+	  if(move_state != STOP){
+		  control_lock = UNLOCKED;
+	  }
+	  else{
+		  control_lock = LOCKED;
+	  }
 	  CalculateAngle();
 	  Balance();
   }
