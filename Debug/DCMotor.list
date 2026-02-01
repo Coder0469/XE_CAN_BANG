@@ -3206,7 +3206,7 @@ int main(void)
  8001f1a:	2b02      	cmp	r3, #2
  8001f1c:	d138      	bne.n	8001f90 <main+0x198>
 			case TURNLEFT:
-				PID_speed.Setpoint = 5;
+				PID_speed.Setpoint = 550;
  8001f1e:	4b28      	ldr	r3, [pc, #160]	@ (8001fc0 <main+0x1c8>)
  8001f20:	4a33      	ldr	r2, [pc, #204]	@ (8001ff0 <main+0x1f8>)
  8001f22:	611a      	str	r2, [r3, #16]
@@ -3217,33 +3217,34 @@ int main(void)
  8001f2e:	4824      	ldr	r0, [pc, #144]	@ (8001fc0 <main+0x1c8>)
  8001f30:	f7ff fd0a 	bl	8001948 <PID_Calculate>
  8001f34:	ed87 0a03 	vstr	s0, [r7, #12]
-				if(pwm_A > 100) pwm_A = 100;
- 8001f38:	edd7 7a03 	vldr	s15, [r7, #12]
- 8001f3c:	ed9f 7a19 	vldr	s14, [pc, #100]	@ 8001fa4 <main+0x1ac>
- 8001f40:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8001f44:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001f48:	dd01      	ble.n	8001f4e <main+0x156>
- 8001f4a:	4b2a      	ldr	r3, [pc, #168]	@ (8001ff4 <main+0x1fc>)
- 8001f4c:	60fb      	str	r3, [r7, #12]
 				if(pwm_A < 0){
- 8001f4e:	edd7 7a03 	vldr	s15, [r7, #12]
- 8001f52:	eef5 7ac0 	vcmpe.f32	s15, #0.0
- 8001f56:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001f5a:	d508      	bpl.n	8001f6e <main+0x176>
+ 8001f38:	edd7 7a03 	vldr	s15, [r7, #12]
+ 8001f3c:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+ 8001f40:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001f44:	d509      	bpl.n	8001f5a <main+0x162>
 					pwm_A = -pwm_A;
- 8001f5c:	edd7 7a03 	vldr	s15, [r7, #12]
- 8001f60:	eef1 7a67 	vneg.f32	s15, s15
- 8001f64:	edc7 7a03 	vstr	s15, [r7, #12]
-					direction_A = FORWARD;
- 8001f68:	2301      	movs	r3, #1
- 8001f6a:	60bb      	str	r3, [r7, #8]
- 8001f6c:	e002      	b.n	8001f74 <main+0x17c>
+ 8001f46:	edd7 7a03 	vldr	s15, [r7, #12]
+ 8001f4a:	eef1 7a67 	vneg.f32	s15, s15
+ 8001f4e:	edc7 7a03 	vstr	s15, [r7, #12]
+					direction_A = BACKWARD;
+ 8001f52:	f04f 33ff 	mov.w	r3, #4294967295
+ 8001f56:	60bb      	str	r3, [r7, #8]
+ 8001f58:	e001      	b.n	8001f5e <main+0x166>
 				}
 				else{
-					direction_A = BACKWARD;
- 8001f6e:	f04f 33ff 	mov.w	r3, #4294967295
- 8001f72:	60bb      	str	r3, [r7, #8]
+					direction_A = FORWARD;
+ 8001f5a:	2301      	movs	r3, #1
+ 8001f5c:	60bb      	str	r3, [r7, #8]
 				}
+	  				if(pwm_A > 100) pwm_A = 100;
+ 8001f5e:	edd7 7a03 	vldr	s15, [r7, #12]
+ 8001f62:	ed9f 7a10 	vldr	s14, [pc, #64]	@ 8001fa4 <main+0x1ac>
+ 8001f66:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8001f6a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001f6e:	dd01      	ble.n	8001f74 <main+0x17c>
+ 8001f70:	4b20      	ldr	r3, [pc, #128]	@ (8001ff4 <main+0x1fc>)
+ 8001f72:	60fb      	str	r3, [r7, #12]
+
 				DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
  8001f74:	edd7 7a03 	vldr	s15, [r7, #12]
  8001f78:	eefc 7ae7 	vcvt.u32.f32	s15, s15
@@ -3284,7 +3285,7 @@ int main(void)
  8001fe4:	20000424 	.word	0x20000424
  8001fe8:	20000020 	.word	0x20000020
  8001fec:	2000064c 	.word	0x2000064c
- 8001ff0:	40a00000 	.word	0x40a00000
+ 8001ff0:	44098000 	.word	0x44098000
  8001ff4:	42c80000 	.word	0x42c80000
 
 08001ff8 <SystemClock_Config>:

@@ -99,7 +99,7 @@ volatile float Setpoint = SETPOINT;
 
 
 float Kp_speed = 0.1;
-float Ki_speed = 1;
+float Ki_speed = 2;
 float Kd_speed = 0;
 
 float Kp_angle = 20;
@@ -297,17 +297,20 @@ int main(void)
 	  if(control_lock == UNLOCKED){
 		  control_lock = LOCKED;
 		  switch (move_state) {
+		    case FORWARD:
+		    	break;
 			case TURNLEFT:
-				PID_speed.Setpoint = 5;
+				PID_speed.Setpoint = 550;
 				pwm_A = PID_Calculate(&PID_speed, MotorA.speed);
-				if(pwm_A > 100) pwm_A = 100;
 				if(pwm_A < 0){
 					pwm_A = -pwm_A;
-					direction_A = FORWARD;
-				}
-				else{
 					direction_A = BACKWARD;
 				}
+				else{
+					direction_A = FORWARD;
+				}
+	  				if(pwm_A > 100) pwm_A = 100;
+
 				DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
 				DCMotor_Run(&MotorA, direction_A);
 				break;
@@ -315,6 +318,24 @@ int main(void)
 				break;
 		}
 	  }
+//	  DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
+//	  PID_speed.Setpoint = 300;
+//	  pwm = PID_Calculate(&PID_speed, MotorB.speed);
+//	  int direction = 0;
+//	  if(pwm < 0){
+//		  pwm = -pwm;
+//		  direction = BACKWARD;
+//	  }
+//	  else{
+//		  direction = FORWARD;
+//	  }
+//	  if(pwm > 100) pwm = 100;
+//	  DCMotor_Set_Speed(&MotorB, (uint32_t) pwm);
+//	  DCMotor_Run(&MotorB, direction);
+//	  sprintf(msg,"speed: %.2f\n",MotorB.speed);
+//	  CDC_Transmit_FS(msg, strlen(msg));
+//	  HAL_Delay(5);
+
   }
   /* USER CODE END 3 */
 }
