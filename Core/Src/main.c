@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -35,7 +34,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SETPOINT 0.5
+#define SETPOINT 0
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,11 +53,6 @@ TIM_HandleTypeDef htim4;
 
 UART_HandleTypeDef huart3;
 
-osThreadId Task01Handle;
-osThreadId Task02Handle;
-osThreadId Task03Handle;
-osSemaphoreId myBinarySem01Handle;
-osSemaphoreId myBinarySem02Handle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -71,10 +66,6 @@ static void MX_TIM4_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM2_Init(void);
-void StartDefaultTask(void const * argument);
-void StartTask02(void const * argument);
-void StartTask03(void const * argument);
-
 /* USER CODE BEGIN PFP */
 
 
@@ -112,7 +103,7 @@ float Ki_speed = 0;
 float Kd_speed = 0;
 
 float Kp_angle = 20;
-float Ki_angle = 100;
+float Ki_angle = 200;
 float Kd_angle = 0.2;
 
 uint8_t rx_data;
@@ -120,6 +111,7 @@ char debug_msg[30];
 float pwm;
 float max_dc;
 int8_t move_state = 0;
+uint8_t control_lock = LOCKED;
 void USB_CDC_RxHandler(uint8_t* Buf, uint32_t Len)
 {
 }
@@ -155,10 +147,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	CDC_Transmit_FS((uint8_t*)debug_msg, strlen(debug_msg));
     switch (rx_data) {
       case 'M': // Tiến
-    	move_state = 1;
+    	move_state = FORWARD;
+    	control_lock = UNLOCKED;
         break;
       case 'N': // Lùi
-    	move_state = -1;
+    	move_state = BACKWARD;
+    	control_lock = UNLOCKED;
         break;
       case 'O': // Xoay trái
         break;
@@ -177,37 +171,21 @@ void CalculateAngle(void){
 	MPU6050_Read_Data(&Raw);
 	MPU6050_Process_Angle(&Raw);  // Sử dụng hàm đã tối ưu (alpha=0.98, có lọc accelerometer)
 	angle = angle_pitch;  // Lấy góc pitch đã được lọc
-	switch(move_state){
-	case 1:
-		Setpoint = Setpoint + 0.1;
-		if(Setpoint > SETPOINT + 4) Setpoint = SETPOINT + 4;
-		PID_angle.Ki = 0;
-		break;
-	case -1:
-		Setpoint = Setpoint - 0.1;
-		if(Setpoint < SETPOINT - 4) Setpoint = SETPOINT - 4;
-		PID_angle.Ki = 0;
-		break;
-	default:
-		if(Setpoint < SETPOINT + 0.2 && Setpoint > SETPOINT - 0.2) Setpoint = SETPOINT;
-		else if (Setpoint > SETPOINT) Setpoint -= 0.1;
-		else if (Setpoint < SETPOINT) Setpoint += 0.1;
-//		PID_angle.Kp = 20;
-	}
-		switch(move_state){
-	case 1:
-		Setpoint = Setpoint + 0.4;
-		if(Setpoint > SETPOINT + 6) Setpoint = SETPOINT + 4;
-		break;
-	case -1:
-		Setpoint = Setpoint - 0.4;
-		if(Setpoint < SETPOINT - 6) Setpoint = SETPOINT - 4;
-		break;
-	default:
-		if(Setpoint < SETPOINT + 0.3 && Setpoint > SETPOINT - 0.3) Setpoint = SETPOINT;
-		else if (Setpoint > SETPOINT) Setpoint -= 0.2;
-		else Setpoint +=0.2;
-	}
+
+//		switch(move_state){
+//	case 1:
+//		Setpoint = Setpoint + 0.4;
+//		if(Setpoint > SETPOINT + 6) Setpoint = SETPOINT + 4;
+//		break;
+//	case -1:
+//		Setpoint = Setpoint - 0.4;
+//		if(Setpoint < SETPOINT - 6) Setpoint = SETPOINT - 4;
+//		break;
+//	default:
+//		if(Setpoint < SETPOINT + 0.3 && Setpoint > SETPOINT - 0.3) Setpoint = SETPOINT;
+//		else if (Setpoint > SETPOINT) Setpoint -= 0.2;
+//		else Setpoint +=0.2;
+//	}
 	PID_angle.Setpoint = Setpoint;
 	max_dc = 100;
 
@@ -282,6 +260,7 @@ int main(void)
   MX_DMA_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_USB_DEVICE_Init();
   MX_I2C1_Init();
   MX_USART3_UART_Init();
   MX_TIM2_Init();
@@ -298,57 +277,9 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* Create the semaphores(s) */
-  /* definition and creation of myBinarySem01 */
-  osSemaphoreDef(myBinarySem01);
-  myBinarySem01Handle = osSemaphoreCreate(osSemaphore(myBinarySem01), 1);
-
-  /* definition and creation of myBinarySem02 */
-  osSemaphoreDef(myBinarySem02);
-  myBinarySem02Handle = osSemaphoreCreate(osSemaphore(myBinarySem02), 1);
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-
-  /* Create the thread(s) */
-  /* definition and creation of Task01 */
-  osThreadDef(Task01, StartDefaultTask, osPriorityNormal, 0, 512);
-  Task01Handle = osThreadCreate(osThread(Task01), NULL);
-
-  /* definition and creation of Task02 */
-  osThreadDef(Task02, StartTask02, osPriorityIdle, 0, 128);
-  Task02Handle = osThreadCreate(osThread(Task02), NULL);
-
-  /* definition and creation of Task03 */
-  osThreadDef(Task03, StartTask03, osPriorityIdle, 0, 128);
-  Task03Handle = osThreadCreate(osThread(Task03), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* Start scheduler */
-  osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
-
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-//  char str[10];
 //  DCMotor_Set_Speed(&MotorA, 100);
 
 
@@ -360,9 +291,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//	  sprintf(str,"%d \n", HAL_GetTick());
-//	  CDC_Transmit_FS((uint8_t*)str, strlen(str));
-//	  HAL_Delay(1000);
+
   }
   /* USER CODE END 3 */
 }
@@ -653,7 +582,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
 
 }
@@ -732,10 +661,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -746,61 +675,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the Task01 thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
-{
-  /* init code for USB_DEVICE */
-  /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-	  osDelay(1);
-  }
-  /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_StartTask02 */
-/**
-* @brief Function implementing the Task02 thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartTask02 */
-void StartTask02(void const * argument)
-{
-  /* USER CODE BEGIN StartTask02 */
-  /* Infinite loop */
-  for(;;)
-  {
-	  osDelay(1);
-  }
-  /* USER CODE END StartTask02 */
-}
-
-/* USER CODE BEGIN Header_StartTask03 */
-/**
-* @brief Function implementing the Task03 thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartTask03 */
-void StartTask03(void const * argument)
-{
-  /* USER CODE BEGIN StartTask03 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartTask03 */
-}
 
 /**
   * @brief  Period elapsed callback in non blocking mode

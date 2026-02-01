@@ -4,6 +4,7 @@
 #define FORWARD 1
 #define BACKWARD -1
 #define STOP 0
+
 typedef struct{
 	float speed;
 	TIM_HandleTypeDef *htim;
