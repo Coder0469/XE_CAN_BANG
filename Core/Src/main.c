@@ -77,7 +77,8 @@ static void MX_TIM2_Init(void);
 DCMotor MotorA;
 DCMotor MotorB;
 MPU6050_Raw Raw;
-PID_Param_t PID_speed;
+PID_Param_t PID_speed_A;
+PID_Param_t PID_speed_B;
 PID_Param_t PID_angle;
 float curr_speed = 0;
 float sampling_time = 0;
@@ -98,8 +99,8 @@ float max_speed = 3400;
 volatile float Setpoint = SETPOINT;
 
 
-float Kp_speed = 0.1;
-float Ki_speed = 2;
+float Kp_speed = 0.04;
+float Ki_speed = 0.1;
 float Kd_speed = 0;
 
 float Kp_angle = 20;
@@ -160,6 +161,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         break;
       case '0': // Dừng (khi thả tay trên App)
     	move_state = STOP;
+		DCMotor_Set_Speed(&MotorA, 0);
+		DCMotor_Set_Speed(&MotorB, 0);
+		DCMotor_Run(&MotorA, FORWARD);
+		DCMotor_Run(&MotorB, FORWARD);
+//    	PID_angle.Setpoint = SETPOINT;
     	break;
     }
 
@@ -186,16 +192,16 @@ void CalculateAngle(void){
 //		else if (Setpoint > SETPOINT) Setpoint -= 0.2;
 //		else Setpoint +=0.2;
 //	}
-	PID_angle.Setpoint = Setpoint;
+	PID_angle.Setpoint = SETPOINT;
 	max_dc = 100;
 
 	if(angle >= Setpoint + 20 || angle <= Setpoint - 20){
 		PID_angle.IntegralSum = 0;
 	}
 //	sprintf(msg,"sp: %.2f angle: %.2f dc: %d time: %d\r\n",Setpoint, angle,(uint32_t)pwm,HAL_GetTick());
-	DCMotor_CalculateSpeed(&MotorA, CalSpeedTime);
-	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
-	sprintf(msg,"angle: %.2f speed A: %.2f speed B: %.2f dc: %d\r\n",angle,MotorA.speed, MotorB.speed,(uint32_t)pwm);
+
+//	sprintf(msg,"angle: %.2f speed A: %.2f speed B: %.2f dc: %d\r\n",angle,MotorA.speed, MotorB.speed,(uint32_t)pwm);
+	sprintf(msg,"speed: %.2f \r\n",MotorA.speed);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 
 }
@@ -215,7 +221,8 @@ void Balance(void){
 
 	if(pwm > max_dc) pwm = max_dc;
 
-
+	DCMotor_CalculateSpeed(&MotorA, CalSpeedTime);
+	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
 	DCMotor_Set_Speed(&MotorB, (uint32_t) pwm);
 	DCMotor_Set_Speed(&MotorA, (uint32_t) pwm);
 	DCMotor_Run(&MotorB, direction);
@@ -235,7 +242,10 @@ int main(void)
 
 	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -100, 100, 1);
 
-	PID_Init(&PID_speed, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, Setpoint, -100, 100, 1);
+	PID_Init(&PID_speed_A, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, Setpoint, -100, 100, 1);
+
+	PID_Init(&PID_speed_B, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, Setpoint, -100, 100, 1);
+
 
   /* USER CODE END 1 */
 
@@ -294,14 +304,41 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+
 	  if(control_lock == UNLOCKED){
 		  control_lock = LOCKED;
 		  switch (move_state) {
 		    case FORWARD:
+				PID_speed_A.Setpoint = 600;
+				PID_speed_B.Setpoint = 600;
+		    	pwm_A = PID_Calculate(&PID_speed_A, MotorA.speed);
+		    	pwm_B = PID_Calculate(&PID_speed_B, MotorB.speed);
+
+				if(pwm_A < 0){
+					pwm_A = -pwm_A;
+					direction_A = BACKWARD;
+				}
+				else{
+					direction_A = FORWARD;
+				}
+				if(pwm_B < 0){
+					pwm_B = -pwm_B;
+					direction_B = BACKWARD;
+				}
+				else{
+					direction_B = FORWARD;
+				}
+	  			if(pwm_A > 100) pwm_A = 100;
+	  			if(pwm_B > 100) pwm_B = 100;
+				DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
+				DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
+				DCMotor_Run(&MotorA, direction_A);
+				DCMotor_Run(&MotorB, direction_B);
 		    	break;
 			case TURNLEFT:
-				PID_speed.Setpoint = 550;
-				pwm_A = PID_Calculate(&PID_speed, MotorA.speed);
+				PID_speed_A.Setpoint = 550;
+				pwm_A = PID_Calculate(&PID_speed_A, MotorA.speed);
 				if(pwm_A < 0){
 					pwm_A = -pwm_A;
 					direction_A = BACKWARD;
@@ -317,7 +354,10 @@ int main(void)
 			default:
 				break;
 		}
+
 	  }
+
+
 //	  DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
 //	  PID_speed.Setpoint = 300;
 //	  pwm = PID_Calculate(&PID_speed, MotorB.speed);
@@ -740,13 +780,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
   if(htim->Instance == TIM2){
 	  if(move_state != STOP){
-		  control_lock = UNLOCKED;
+		  control_lock--;
+		  if(control_lock < 0) control_lock = UNLOCKED;
 	  }
 	  else{
 		  control_lock = LOCKED;
 	  }
 	  CalculateAngle();
-	  Balance();
+//	  Balance();
   }
 
   /* USER CODE END Callback 1 */

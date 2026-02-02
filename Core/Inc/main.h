@@ -78,6 +78,7 @@ extern Kalman_t kalman;
 /* USER CODE BEGIN EC */
 #define TURNLEFT 2
 #define TURNRIGHT 3
+
 #define LOCKED 1
 #define UNLOCKED 0
 /* USER CODE END EC */
