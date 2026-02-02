@@ -104,7 +104,7 @@ float Ki_speed = 0.1;
 float Kd_speed = 0;
 
 float Kp_angle = 20;
-float Ki_angle = 200;
+float Ki_angle = 150;
 float Kd_angle = 0.2;
 
 uint8_t rx_data;
@@ -165,7 +165,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		DCMotor_Set_Speed(&MotorB, 0);
 		DCMotor_Run(&MotorA, FORWARD);
 		DCMotor_Run(&MotorB, FORWARD);
-//    	PID_angle.Setpoint = SETPOINT;
+    	PID_angle.Setpoint = SETPOINT;
     	break;
     }
 
@@ -192,17 +192,17 @@ void CalculateAngle(void){
 //		else if (Setpoint > SETPOINT) Setpoint -= 0.2;
 //		else Setpoint +=0.2;
 //	}
-	PID_angle.Setpoint = SETPOINT;
+//	PID_angle.Setpoint = SETPOINT;
 	max_dc = 100;
 
-	if(angle >= Setpoint + 20 || angle <= Setpoint - 20){
+	if(angle >= Setpoint + 8 || angle <= Setpoint - 8){
 		PID_angle.IntegralSum = 0;
 	}
 //	sprintf(msg,"sp: %.2f angle: %.2f dc: %d time: %d\r\n",Setpoint, angle,(uint32_t)pwm,HAL_GetTick());
 
 //	sprintf(msg,"angle: %.2f speed A: %.2f speed B: %.2f dc: %d\r\n",angle,MotorA.speed, MotorB.speed,(uint32_t)pwm);
-	sprintf(msg,"speed: %.2f \r\n",MotorA.speed);
-	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+//	sprintf(msg,"speed: %.2f \r\n",MotorA.speed);
+//	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 
 }
 void Balance(void){
@@ -310,31 +310,36 @@ int main(void)
 		  control_lock = LOCKED;
 		  switch (move_state) {
 		    case FORWARD:
-				PID_speed_A.Setpoint = 600;
-				PID_speed_B.Setpoint = 600;
+				PID_speed_A.Setpoint = 300;
+				PID_speed_B.Setpoint = 300;
 		    	pwm_A = PID_Calculate(&PID_speed_A, MotorA.speed);
 		    	pwm_B = PID_Calculate(&PID_speed_B, MotorB.speed);
+		    	PID_angle.Setpoint = pwm_A/20;
+		    	if(PID_angle.Setpoint > 5) PID_angle.Setpoint = 5;
+		    	else if(PID_angle.Setpoint < -5) PID_angle.Setpoint = -5;
+		    	sprintf(msg,"Sp: %.2f \r\n",pwm_A);
+		    	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 
-				if(pwm_A < 0){
-					pwm_A = -pwm_A;
-					direction_A = BACKWARD;
-				}
-				else{
-					direction_A = FORWARD;
-				}
-				if(pwm_B < 0){
-					pwm_B = -pwm_B;
-					direction_B = BACKWARD;
-				}
-				else{
-					direction_B = FORWARD;
-				}
-	  			if(pwm_A > 100) pwm_A = 100;
-	  			if(pwm_B > 100) pwm_B = 100;
-				DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
-				DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
-				DCMotor_Run(&MotorA, direction_A);
-				DCMotor_Run(&MotorB, direction_B);
+//				if(pwm_A < 0){
+//					pwm_A = -pwm_A;
+//					direction_A = BACKWARD;
+//				}
+//				else{
+//					direction_A = FORWARD;
+//				}
+//				if(pwm_B < 0){
+//					pwm_B = -pwm_B;
+//					direction_B = BACKWARD;
+//				}
+//				else{
+//					direction_B = FORWARD;
+//				}
+//	  			if(pwm_A > 100) pwm_A = 100;
+//	  			if(pwm_B > 100) pwm_B = 100;
+//				DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
+//				DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
+//				DCMotor_Run(&MotorA, direction_A);
+//				DCMotor_Run(&MotorB, direction_B);
 		    	break;
 			case TURNLEFT:
 				PID_speed_A.Setpoint = 550;
@@ -787,7 +792,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  control_lock = LOCKED;
 	  }
 	  CalculateAngle();
-//	  Balance();
+	  Balance();
   }
 
   /* USER CODE END Callback 1 */
