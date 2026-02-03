@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SETPOINT 0.5
+#define SETPOINT 0
 
 /* USER CODE END PD */
 
@@ -97,7 +97,7 @@ float total_Gy = 0;
 float max_speed = 400;
 
 volatile float Setpoint = SETPOINT;
-float max_tilt = 2;
+float max_tilt = MAXTILT;
 
 
 float Kp_speed = 0.04;
@@ -149,9 +149,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     // Xử lý ký tự nhận được
 	sprintf(debug_msg, "Received: %c (ASCII: %d)\r\n", rx_data, rx_data);
 	CDC_Transmit_FS((uint8_t*)debug_msg, strlen(debug_msg));
+	PID_angle.IntegralSum = 0;
     switch (rx_data) {
       case 'M': // Tiến
     	move_state = FORWARD;
+//    	PID_angle.IntegralSum += 10;
         break;
       case 'N': // Lùi
     	move_state = BACKWARD;
@@ -177,25 +179,22 @@ void CalculateAngle(void){
 	angle = angle_pitch;  // Lấy góc pitch đã được lọc
 	DCMotor_CalculateSpeed(&MotorA, CalSpeedTime);
 	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
-//		switch(move_state){
-//	case 1:
-//		Setpoint = Setpoint + 0.4;
-//		if(Setpoint > SETPOINT + 6) Setpoint = SETPOINT + 4;
-//		break;
-//	case -1:
-//		Setpoint = Setpoint - 0.4;
-//		if(Setpoint < SETPOINT - 6) Setpoint = SETPOINT - 4;
-//		break;
-//	default:
-//		if(Setpoint < SETPOINT + 0.3 && Setpoint > SETPOINT - 0.3) Setpoint = SETPOINT;
-//		else if (Setpoint > SETPOINT) Setpoint -= 0.2;
-//		else Setpoint +=0.2;
-//	}
+
 	max_dc = 100;
-	if(angle >= SETPOINT + 8 || angle <= SETPOINT - 8){
+	if(angle >= SETPOINT + 10 || angle <= SETPOINT - 10){
 		PID_angle.IntegralSum = 0;
 	}
 
+//	else if(angle >= SETPOINT + 15 || angle <= SETPOINT - 15){
+//		PID_angle.Kp = 10;
+//		PID_angle.Ki = 0;
+//		PID_angle.Kp = 0;
+//	}
+//	else{
+//		PID_angle.Kp = Kp_angle;
+//		PID_angle.Ki = Ki_angle;
+//		PID_angle.Kd = Kd_angle;
+//	}
 //	sprintf(msg,"sp: %.2f angle: %.2f dc: %d time: %d\r\n",Setpoint, angle,(uint32_t)pwm,HAL_GetTick());
 
 //	sprintf(msg,"angle: %.2f speed A: %.2f speed B: %.2f dc: %d\r\n",angle,MotorA.speed, MotorB.speed,(uint32_t)pwm);
@@ -207,7 +206,7 @@ void Balance(void){
 	pwm = PID_Calculate(&PID_angle, angle);
 	prev_angle = angle;
 	int direction = 0;
-	sprintf(msg,"angle: %.2f sp: %.2f speed:%.2f pwm:%.2f\r\n", angle,PID_angle.Setpoint,MotorA.speed,pwm);
+	sprintf(msg,"angle: %.2f IS: %.2f speed:%.2f pwm:%.2f\r\n", angle,PID_angle.IntegralSum,MotorA.speed,pwm);
 	CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 
 	if(pwm < 0){
@@ -240,7 +239,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -50, 50, 1);
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -15, 15, 1);
 
 	PID_Init(&PID_speed_A, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, Setpoint, -100, 100, 1);
 
@@ -311,20 +310,38 @@ int main(void)
 		  control_lock = LOCKED;
 		  switch (move_state) {
 		  	case STOP:
-		  		PID_angle.IntegralSum = 0;
-		  		if(PID_angle.Setpoint > SETPOINT) PID_angle.Setpoint -= 0.2;
-		  		else if(PID_angle.Setpoint < SETPOINT)  PID_angle.Setpoint += 0.2;
+		  		if(PID_angle.Setpoint > SETPOINT){
+		  			PID_angle.Setpoint -= 0.2;
+		  			PID_angle.IntegralSum = 0;
+		  		}
+		  		else if(PID_angle.Setpoint < SETPOINT){
+		  			PID_angle.Setpoint += 0.2;
+		  			PID_angle.IntegralSum = 0;
+		  		}
 		  		if(PID_angle.Setpoint < SETPOINT + 0.3 && PID_angle.Setpoint > SETPOINT - 0.3) PID_angle.Setpoint = SETPOINT;
 		  		break;
-		    case FORWARD:
-		    	PID_angle.IntegralSum = 40;
-		    	PID_angle.Setpoint += 0.2;
-		    	if(PID_angle.Setpoint > max_tilt+SETPOINT) PID_angle.Setpoint = max_tilt + SETPOINT;
-
+		  	case FORWARD:
+	  			PID_angle.IntegralSum = 0;
+		    	PID_angle.Setpoint -= 0.3;
+		    	if(PID_angle.Setpoint < SETPOINT-10) PID_angle.Setpoint = SETPOINT-10;
+		    	if(MotorA.speed < -1000){
+		    		PID_angle.Setpoint+=0.4;
+		    	}
+		    	break;
+		    case BACKWARD:
+		    	PID_angle.IntegralSum = 0;
+		    	PID_angle.Setpoint += 0.3;
+		    	if(PID_angle.Setpoint > 10+SETPOINT) PID_angle.Setpoint = 10 + SETPOINT;
+		    	if(MotorA.speed > 1000){
+		    		PID_angle.Setpoint-=0.4;
+		    	}
 		    	break;
 			case TURNLEFT:
-				PID_speed_A.Setpoint = 400;
+				PID_speed_A.Setpoint = 500;
+				PID_speed_B.Setpoint = -500;
+		  		PID_angle.IntegralSum = 0;
 				pwm_A = PID_Calculate(&PID_speed_A, MotorA.speed);
+				pwm_B = PID_Calculate(&PID_speed_B, MotorB.speed);
 				if(pwm_A < 0){
 					pwm_A = -pwm_A;
 					direction_A = BACKWARD;
@@ -332,10 +349,36 @@ int main(void)
 				else{
 					direction_A = FORWARD;
 				}
-	  				if(pwm_A > 100) pwm_A = 100;
-
+	  			if(pwm_A > 100) pwm_A = 100;
+				if(pwm_B < 0){
+					pwm_B = -pwm_B;
+					direction_B = BACKWARD;
+				}
+				else{
+					direction_B = FORWARD;
+				}
+	  			if(pwm_A > 100) pwm_A = 100;
+	  			if(pwm_B > 100) pwm_B = 100;
 				DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
 				DCMotor_Run(&MotorA, direction_A);
+//				DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
+//				DCMotor_Run(&MotorB, direction_B);
+				break;
+			case TURNRIGHT:
+				PID_speed_B.Setpoint = 500;
+		  		PID_angle.IntegralSum = 0;
+				pwm_B = PID_Calculate(&PID_speed_B, MotorB.speed);
+				if(pwm_B < 0){
+					pwm_B = -pwm_B;
+					direction_B = BACKWARD;
+				}
+				else{
+					direction_B = FORWARD;
+				}
+	  				if(pwm_B > 100) pwm_B = 100;
+
+				DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
+				DCMotor_Run(&MotorB, direction_B);
 				break;
 			default:
 				break;
