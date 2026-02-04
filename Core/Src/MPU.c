@@ -98,9 +98,9 @@ void MPU6050_Init(void)
     }
     else
     {
-//        sprintf(msg, "MPU6050 not found!\r\n");
-//        CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
-//        HAL_Delay(500);
+        sprintf(msg, "MPU6050 not found!\r\n");
+        CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+        HAL_Delay(500);
     }
 }
 void MPU6050_Read_Data(MPU6050_Raw *Raw){
