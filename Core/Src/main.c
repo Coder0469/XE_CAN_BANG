@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SETPOINT 0
+#define SETPOINT -0.2
 
 /* USER CODE END PD */
 
@@ -101,7 +101,7 @@ float max_tilt = MAXTILT;
 
 
 float Kp_speed = 0.01;
-float Ki_speed = 4;
+float Ki_speed = 2;
 float Kd_speed = 0.00002;
 
 //float Kp_angle = 50;
@@ -109,7 +109,7 @@ float Kd_speed = 0.00002;
 //float Kd_angle = 0.1;
 
 float Kp_angle = 15;
-float Ki_angle = 150;
+float Ki_angle = 500;
 float Kd_angle = 0.3;
 
 uint8_t rx_data;
@@ -193,7 +193,7 @@ void CalculateAngle(void){
 	DCMotor_CalculateSpeed(&MotorB, CalSpeedTime);
 
 	max_dc = 100;
-	if(angle >= SETPOINT + 8 || angle <= SETPOINT - 8){
+	if(angle >= SETPOINT + 4 || angle <= SETPOINT - 4){
 		PID_angle.IntegralSum = 0;
 	}
 
@@ -236,6 +236,8 @@ void Balance(void){
 	  }
 	  if(pwm_A > 100) pwm_A = 100;
 	  if(pwm_B > 100) pwm_B = 100;
+	  if(move_state == TURNLEFT) pwm_B = pwm_B*0.5;
+	  else if(move_state == TURNRIGHT) pwm_A = pwm_A*0.5;
 	  sprintf(msg,"angle: %.2f IS: %.2f speed:%.2f pwm:%.2f\r\n", angle,PID_angle.IntegralSum,MotorA.speed,pwm_A);
 	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 	  DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
@@ -254,7 +256,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -5, 5, 1);
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -2, 2, 1);
 
 	PID_Init(&PID_speed_A, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, Setpoint, -15, 15, 1);
 
@@ -323,34 +325,42 @@ int main(void)
 		  control_lock = LOCKED;
 		  switch (move_state) {
 		  	case STOP:
+		  		PID_angle.Ki = Ki_angle;
+		  		PID_angle.Kp = Kp_angle;
 		  		if(PID_angle.Setpoint > SETPOINT){
-		  			PID_angle.Setpoint -= 0.2;
+		  			PID_angle.Setpoint -= 0.1;
 		  			PID_angle.IntegralSum = 0;
 		  		}
 		  		else if(PID_angle.Setpoint < SETPOINT){
-		  			PID_angle.Setpoint += 0.2;
+		  			PID_angle.Setpoint += 0.1;
 		  			PID_angle.IntegralSum = 0;
 		  		}
 		  		if(PID_angle.Setpoint < SETPOINT + 0.3 && PID_angle.Setpoint > SETPOINT - 0.3) PID_angle.Setpoint = SETPOINT;
 		  		break;
 		  	case FORWARD:
 	  			PID_angle.IntegralSum = 0;
+		    	PID_angle.Ki = 0;
+		    	PID_angle.Kp = 12;
 		    	PID_angle.Setpoint -= 0.3;
-		    	if(PID_angle.Setpoint < SETPOINT-10) PID_angle.Setpoint = SETPOINT-10;
-		    	if(MotorA.speed < -1000){
+		    	if(PID_angle.Setpoint < SETPOINT-6) PID_angle.Setpoint = SETPOINT-6;
+		    	if(MotorA.speed < -400){
 		    		PID_angle.Setpoint+=0.4;
 		    	}
 		    	break;
 		    case BACKWARD:
 		    	PID_angle.IntegralSum = 0;
+		    	PID_angle.Ki = 0;
+		    	PID_angle.Kp = 12;
 		    	PID_angle.Setpoint += 0.3;
-		    	if(PID_angle.Setpoint > 10+SETPOINT) PID_angle.Setpoint = 10 + SETPOINT;
-		    	if(MotorA.speed > 1000){
+		    	if(PID_angle.Setpoint > 6+SETPOINT) PID_angle.Setpoint = 6 + SETPOINT;
+		    	if(MotorA.speed > 400){
 		    		PID_angle.Setpoint-=0.4;
 		    	}
 		    	break;
 			case SPINLEFT:
-				PID_speed_A.Setpoint = 1000;
+				PID_speed_A.Setpoint = 800;
+		    	PID_angle.Kp = 12;
+
 //		  		PID_angle.IntegralSum = 0;
 				pwm_A = PID_Calculate(&PID_speed_A, MotorA.speed);
 				if(pwm_A < 0){
@@ -366,7 +376,9 @@ int main(void)
 
 				break;
 			case SPINRIGHT:
-				PID_speed_B.Setpoint = 1000;
+				PID_speed_B.Setpoint = 800;
+		    	PID_angle.Kp = 12;
+
 //		  		PID_angle.IntegralSum = 0;
 				pwm_B = PID_Calculate(&PID_speed_B, MotorB.speed);
 				if(pwm_B < 0){
@@ -383,7 +395,9 @@ int main(void)
 				break;
 			case TURNLEFT:
 //				PID_speed_B.Setpoint = MotorA.speed*0.75;
-////		  		PID_angle.IntegralSum = 0;
+		  		PID_angle.IntegralSum = 0;
+		    	PID_angle.Ki = 0;
+		    	PID_angle.Kp = 12;
 //				pwm_B = PID_Calculate(&PID_speed_B, MotorB.speed);
 //				if(pwm_B < 0){
 //					pwm_B = -pwm_B;
@@ -399,7 +413,9 @@ int main(void)
 				break;
 			case TURNRIGHT:
 //				PID_speed_A.Setpoint = MotorB.speed*0.75;
-////		  		PID_angle.IntegralSum = 0;
+		  		PID_angle.IntegralSum = 0;
+		    	PID_angle.Ki = 0;
+		    	PID_angle.Kp = 12;
 //				pwm_A = PID_Calculate(&PID_speed_A, MotorA.speed);
 //				if(pwm_A < 0){
 //					pwm_A = -pwm_A;
