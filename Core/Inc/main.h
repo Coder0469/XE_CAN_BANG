@@ -76,8 +76,10 @@ extern Kalman_t kalman;
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-#define TURNLEFT 2
-#define TURNRIGHT 3
+#define SPINLEFT 2
+#define SPINRIGHT 3
+#define TURNLEFT 4
+#define TURNRIGHT 5
 #define MAXTILT 3
 #define LOCKED 1
 #define UNLOCKED 0
