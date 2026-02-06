@@ -50,6 +50,7 @@ DMA_HandleTypeDef hdma_i2c1_rx;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim8;
 
 UART_HandleTypeDef huart3;
 
@@ -66,6 +67,7 @@ static void MX_TIM4_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM8_Init(void);
 /* USER CODE BEGIN PFP */
 
 
@@ -108,15 +110,15 @@ float Kd_speed = 0.00002;
 //float Ki_angle = 0;
 //float Kd_angle = 0.1;
 
-float Kp_angle = 15;
+float Kp_angle = 13;
 float Ki_angle = 500;
-float Kd_angle = 0.3;
+float Kd_angle = 0.2;
 
 uint8_t rx_data;
 char debug_msg[30];
 float pwm_A;
 float pwm_B;
-float pwm_buffer = 15;
+float pwm_buffer = 13;
 float max_dc;
 int8_t move_state = 0;
 uint8_t control_lock = LOCKED;
@@ -164,12 +166,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
       case 'N': // Lùi
     	move_state = BACKWARD;
         break;
-      case 'O': // Xoay trái
-    	move_state = SPINLEFT;
-        break;
-      case 'P': // Xoay phải
-    	move_state = SPINRIGHT;
-        break;
+//      case 'O': // Xoay trái
+//    	move_state = SPINLEFT;
+//        break;
+//      case 'P': // Xoay phải
+//    	move_state = SPINRIGHT;
+//        break;
       case 'B':
     	move_state = TURNRIGHT;
     	break;
@@ -238,8 +240,8 @@ void Balance(void){
 	  if(pwm_B > 100) pwm_B = 100;
 	  if(move_state == TURNLEFT) pwm_B = pwm_B*0.5;
 	  else if(move_state == TURNRIGHT) pwm_A = pwm_A*0.5;
-	  sprintf(msg,"angle: %.2f IS: %.2f speed:%.2f pwm:%.2f\r\n", angle,PID_angle.IntegralSum,MotorA.speed,pwm_A);
-	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+//	  sprintf(msg,"angle: %.2f IS: %.2f speed:%.2f pwm:%.2f time: %d\r\n", angle,PID_angle.IntegralSum,MotorA.speed,pwm_A,HAL_GetTick());
+//	  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 	  DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
 	  DCMotor_Run(&MotorB, direction_B);
 	  DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
@@ -291,6 +293,7 @@ int main(void)
   MX_I2C1_Init();
   MX_USART3_UART_Init();
   MX_TIM2_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
   MX_USB_DEVICE_Init();
 //  HAL_TIM_Base_Start_IT(&htim3);
@@ -312,15 +315,25 @@ int main(void)
 
 
 
-
+ char str[10];
   while (1)
   {
-
+//	  sprintf(str,"H\r\n");
+//	  CDC_Transmit_FS((uint8_t*)str, strlen(str));
+//	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 
-
+//	  if(control_lock > 0){
+//		  control_lock--;
+//		  if(control_lock < 0) control_lock = UNLOCKED;
+//	  }
+//	  else{
+//		  control_lock = LOCKED;
+//	  }
+//	  CalculateAngle();
+//	  Balance();
 	  if(control_lock == UNLOCKED){
 		  control_lock = LOCKED;
 		  switch (move_state) {
@@ -343,7 +356,7 @@ int main(void)
 		    	PID_angle.Kp = 12;
 		    	PID_angle.Setpoint -= 0.3;
 		    	if(PID_angle.Setpoint < SETPOINT-6) PID_angle.Setpoint = SETPOINT-6;
-		    	if(MotorA.speed < -400){
+		    	if(MotorA.speed < -800){
 		    		PID_angle.Setpoint+=0.4;
 		    	}
 		    	break;
@@ -353,12 +366,12 @@ int main(void)
 		    	PID_angle.Kp = 12;
 		    	PID_angle.Setpoint += 0.3;
 		    	if(PID_angle.Setpoint > 6+SETPOINT) PID_angle.Setpoint = 6 + SETPOINT;
-		    	if(MotorA.speed > 400){
+		    	if(MotorA.speed > 800){
 		    		PID_angle.Setpoint-=0.4;
 		    	}
 		    	break;
 			case SPINLEFT:
-				PID_speed_A.Setpoint = 800;
+				PID_speed_A.Setpoint = 500;
 		    	PID_angle.Kp = 12;
 
 //		  		PID_angle.IntegralSum = 0;
@@ -376,7 +389,7 @@ int main(void)
 
 				break;
 			case SPINRIGHT:
-				PID_speed_B.Setpoint = 800;
+				PID_speed_B.Setpoint = 500;
 		    	PID_angle.Kp = 12;
 
 //		  		PID_angle.IntegralSum = 0;
@@ -393,7 +406,7 @@ int main(void)
 				DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
 				DCMotor_Run(&MotorB, direction_B);
 				break;
-			case TURNLEFT:
+			case TURNRIGHT:
 //				PID_speed_B.Setpoint = MotorA.speed*0.75;
 		  		PID_angle.IntegralSum = 0;
 		    	PID_angle.Ki = 0;
@@ -411,7 +424,7 @@ int main(void)
 //				DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
 //				DCMotor_Run(&MotorB, direction_B);
 				break;
-			case TURNRIGHT:
+			case TURNLEFT:
 //				PID_speed_A.Setpoint = MotorB.speed*0.75;
 		  		PID_angle.IntegralSum = 0;
 		    	PID_angle.Ki = 0;
@@ -485,7 +498,7 @@ int main(void)
 //	  }
 //	  count = count+1;
 //
-//	  HAL_Delay(10);
+//	  HAL_Delay(5);
   }
   /* USER CODE END 3 */
 }
@@ -733,6 +746,52 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief TIM8 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM8_Init(void)
+{
+
+  /* USER CODE BEGIN TIM8_Init 0 */
+
+  /* USER CODE END TIM8_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM8_Init 1 */
+
+  /* USER CODE END TIM8_Init 1 */
+  htim8.Instance = TIM8;
+  htim8.Init.Prescaler = 167;
+  htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim8.Init.Period = 9999;
+  htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim8.Init.RepetitionCounter = 0;
+  htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim8, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM8_Init 2 */
+
+  /* USER CODE END TIM8_Init 2 */
+
+}
+
+/**
   * @brief USART3 Initialization Function
   * @param None
   * @retval None
@@ -898,6 +957,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  }
 	  CalculateAngle();
 	  Balance();
+	  sprintf(msg,"speed A: %.2f speed B: %.2f pwm: %.2f time: %d\r\n",MotorA.speed,MotorB.speed,pwm_A,HAL_GetTick());
+	  CDC_Transmit_FS(msg, strlen(msg));
   }
 
   /* USER CODE END Callback 1 */
