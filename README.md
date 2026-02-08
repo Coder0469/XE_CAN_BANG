@@ -33,3 +33,16 @@ Review sản phẩm:
 ## Giải thuật điều khiển xe từ xa 
 - Điều khiển đi thẳng/lùi: Chỉnh Setpoint +5 hoặc -5 để xe nghiêng về phía trước hoặc phía sau. PID sẽ đảm bảo xe luôn nghiêng về một phía để xe tự đổ.
 - Điều khiển rẽ trái/phải: Giảm PWM của bánh trái/phải bằng 50% PWM đáng lẽ nó phải chạy.
+- Xe nhận tín hiệu từ app, quyết định xe tiến vào trạng thái nào trong các trạng thái bao gồm:
+  + STOP: Xe đứng im cân bằng tại chỗ
+  + FORWARD: Xe nghiêng về phía trước để chạy tiến
+  + BACKWARD: Xe nghiêng về đằng sau để chạy lùi
+  + TURNLEFT: PWM bánh trái giảm để xe rẽ trái
+  + TURNRIGHT: PWM bánh phải giảm để xe rẽ phải
+  + SPINLEFT: bánh trái luôn tiến về phía trước trong khi bánh phải vẫn làm công việc cân bằng
+  + SPINRIGHT: bánh phải luôn tiến về phía trước trong khi bánh trái vẫn làm công việc cân bằng
+- Trường hợp xe đạt tốc độ quá cao khiến xe đổ mà không dựng lại được, cơ chế giảm tốc sẽ được kích hoạt
+- Cơ chế giảm tốc: VXL đọc số xung từ encoder từ đó tính ra tốc độ xe. Khi tốc độ xe vượt quá ngưỡng sẽ điều chỉnh lại Setpoint về cân bằng.
+
+## RTOS: Lập lịch các tác vụ để xe vừa điều khiển, vừa cân bằng
+
