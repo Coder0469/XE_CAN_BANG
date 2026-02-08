@@ -45,4 +45,9 @@ Review sản phẩm:
 - Cơ chế giảm tốc: VXL đọc số xung từ encoder từ đó tính ra tốc độ xe. Khi tốc độ xe vượt quá ngưỡng sẽ điều chỉnh lại Setpoint về cân bằng.
 
 ## RTOS: Lập lịch các tác vụ để xe vừa điều khiển, vừa cân bằng
-
+- Chương trình được chia thành 2 task thực hiện đồng thời:
+  + Task 1: Thực hiện đọc cảm biến, tính PID, điều khiển động cơ cho cân bằng
+  + Task 2: Thực hiện các thao tác tiến/lùi, xoay trái/phải
+- Task 1 có độ ưu tiên cao nhất, thực hiện mỗi 5ms. Task này chỉ thực hiện khi ngắt timer xảy ra. 
+- Task 2 có độ ưu tiên thấp hơn. Task 1 giữ khóa của task 2, nghĩa là task 2 chỉ được phép chạy khi task 1 đã chạy xong.
+  <img width="2440" height="1388" alt="image" src="https://github.com/user-attachments/assets/055f3bf8-b90f-49b7-8206-9beeef4725cf" />
