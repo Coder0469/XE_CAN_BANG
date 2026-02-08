@@ -7,6 +7,10 @@ Tiến độ: Đã hoàn thành 100%
 
 Review sản phẩm:
 
+
+https://github.com/user-attachments/assets/3e823fef-421b-4f22-a7d6-7f7f73d8bee9
+
+
 ## Linh kiện sử dụng
 1. 2 Động cơ DC GA25 12V 280RPM
 2. Cảm biến đo góc MPU6050
