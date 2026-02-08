@@ -1,11 +1,8 @@
 # XE_CAN_BANG
-Đồ án môn Thiết kế hệ thống nhúng: Xe cân bằng
+## Đồ án môn Thiết kế hệ thống nhúng: Xe cân bằng
 
 Thành viên: Đình Hiếu, Khánh Đăng, Hữu Đạt, Quang Hiếu
 
-Mục tiêu:
- Chế tạo xe cân bằng sử dụng STM32, có khả năng điều khiển từ xa
-
-Tiến độ: 0%
+Tiến độ: Đã hoàn thành 100%
 
 Review sản phẩm:
