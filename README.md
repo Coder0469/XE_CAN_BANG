@@ -31,3 +31,5 @@ Review sản phẩm:
 3. Xe nhận tín hiệu điều khiển và chạy theo yêu cầu
 
 ## Giải thuật điều khiển xe từ xa 
+- Điều khiển đi thẳng/lùi: Chỉnh Setpoint +5 hoặc -5 để xe nghiêng về phía trước hoặc phía sau. PID sẽ đảm bảo xe luôn nghiêng về một phía để xe tự đổ.
+- Điều khiển rẽ trái/phải: Giảm PWM của bánh trái/phải bằng 50% PWM đáng lẽ nó phải chạy.
