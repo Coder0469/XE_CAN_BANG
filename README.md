@@ -24,3 +24,10 @@ Review sản phẩm:
 2. Điều chỉnh Kp sao cho xe có thể lắc lư xung quanh điểm cân bằng (Setpoint). Lưu ý: Kp quá cao sẽ làm xe lắc lư với biên độ rộng, Kp quá nhỏ thì xe sẽ không đủ lực để đứng dậy khi ngã.
 3. Điều chỉnh Kd sao cho xe lắc lư với biên độ nhỏ nhất, xe có thể đứng dậy mượt nhất mà ịt bị vọt lố.
 4. Điều chỉnh Ki sao cho xe có thể phản ứng nhanh trước những tác động nhỏ như đẩy xe hoặc tải đồ.
+
+## Cách điều khiển xe từ xa
+1. Để điều khiển xe, cần kết nối xe với điện thoại thông qua Bluetooth
+2. Điện thoại sử dụng app Adruino Bluetooth Control để gửi tín hiệu điều khiển đến xe.
+3. Xe nhận tín hiệu điều khiển và chạy theo yêu cầu
+
+## Giải thuật điều khiển xe từ xa 
