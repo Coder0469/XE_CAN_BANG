@@ -50,5 +50,6 @@ Review sản phẩm:
   + Task 2: Thực hiện các thao tác tiến/lùi, xoay trái/phải
 - Task 1 có độ ưu tiên cao nhất, thực hiện mỗi 5ms. Task này chỉ thực hiện khi ngắt timer xảy ra. 
 - Task 2 có độ ưu tiên thấp hơn. Task 1 giữ khóa của task 2, nghĩa là task 2 chỉ được phép chạy khi task 1 đã chạy xong.
+- Sau khi task 2 chạy xong, nó phải trả lại khóa.
 <img width="590" height="327" alt="Untitled Diagram drawio" src="https://github.com/user-attachments/assets/b271fe1a-1c5e-449d-88c1-4cd64089e3e7" />
 
