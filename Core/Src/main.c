@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SETPOINT -0.2
+#define SETPOINT 0.4
 
 /* USER CODE END PD */
 
@@ -110,8 +110,8 @@ float Kd_speed = 0.00002;
 //float Ki_angle = 0;
 //float Kd_angle = 0.1;
 
-float Kp_angle = 13;
-float Ki_angle = 500;
+float Kp_angle = 16;
+float Ki_angle = 350;
 float Kd_angle = 0.2;
 
 uint8_t rx_data;
@@ -258,7 +258,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -2, 2, 1);
+	PID_Init(&PID_angle,Kp_angle, Ki_angle, Kd_angle,CalSpeedTime, Setpoint, -25, 25, 1);
 
 	PID_Init(&PID_speed_A, Kp_speed, Ki_speed, Kd_speed, CalSpeedTime, Setpoint, -15, 15, 1);
 
@@ -371,40 +371,16 @@ int main(void)
 		    	}
 		    	break;
 			case SPINLEFT:
-				PID_speed_A.Setpoint = 500;
 		    	PID_angle.Kp = 12;
+				DCMotor_Set_Speed(&MotorA, 35);
+				DCMotor_Run(&MotorA, FORWARD);
 
-//		  		PID_angle.IntegralSum = 0;
-				pwm_A = PID_Calculate(&PID_speed_A, MotorA.speed);
-				if(pwm_A < 0){
-					pwm_A = -pwm_A;
-					direction_A = BACKWARD;
-				}
-				else{
-					direction_A = FORWARD;
-				}
-	  			if(pwm_A > 100) pwm_A = 100;
-				DCMotor_Set_Speed(&MotorA, (uint32_t) pwm_A);
-				DCMotor_Run(&MotorA, direction_A);
 
 				break;
 			case SPINRIGHT:
-				PID_speed_B.Setpoint = 500;
 		    	PID_angle.Kp = 12;
-
-//		  		PID_angle.IntegralSum = 0;
-				pwm_B = PID_Calculate(&PID_speed_B, MotorB.speed);
-				if(pwm_B < 0){
-					pwm_B = -pwm_B;
-					direction_B = BACKWARD;
-				}
-				else{
-					direction_B = FORWARD;
-				}
-	  				if(pwm_B > 100) pwm_B = 100;
-
-				DCMotor_Set_Speed(&MotorB, (uint32_t) pwm_B);
-				DCMotor_Run(&MotorB, direction_B);
+				DCMotor_Set_Speed(&MotorB, 35);
+				DCMotor_Run(&MotorB, FORWARD);
 				break;
 			case TURNRIGHT:
 //				PID_speed_B.Setpoint = MotorA.speed*0.75;
@@ -957,7 +933,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  }
 	  CalculateAngle();
 	  Balance();
-	  sprintf(msg,"speed A: %.2f speed B: %.2f pwm: %.2f time: %d\r\n",MotorA.speed,MotorB.speed,pwm_A,HAL_GetTick());
+	  sprintf(msg,"speed A: %.2f angle: %.2f pwm: %.2f time: %d\r\n",MotorA.speed,angle,pwm_A,HAL_GetTick());
 	  CDC_Transmit_FS(msg, strlen(msg));
   }
 
