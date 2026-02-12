@@ -58,3 +58,5 @@ https://github.com/user-attachments/assets/3e823fef-421b-4f22-a7d6-7f7f73d8bee9
 
 <img width="590" height="327" alt="Untitled Diagram drawio" src="https://github.com/user-attachments/assets/c5ad38b1-2c09-4bea-9e00-a85fc771a367" />
 
+Balance robot remote control
+https://youtu.be/zjSgxROftQg
