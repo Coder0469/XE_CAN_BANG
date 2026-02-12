@@ -55,5 +55,6 @@ https://github.com/user-attachments/assets/3e823fef-421b-4f22-a7d6-7f7f73d8bee9
 - Task 1 có độ ưu tiên cao nhất, thực hiện mỗi 5ms. Task này chỉ thực hiện khi ngắt timer xảy ra. 
 - Task 2 có độ ưu tiên thấp hơn. Task 1 giữ khóa của task 2, nghĩa là task 2 chỉ được phép chạy khi task 1 đã chạy xong.
 - Sau khi task 2 chạy xong, nó phải trả lại khóa.
+
 <img width="590" height="327" alt="Untitled Diagram drawio" src="https://github.com/user-attachments/assets/c5ad38b1-2c09-4bea-9e00-a85fc771a367" />
 
