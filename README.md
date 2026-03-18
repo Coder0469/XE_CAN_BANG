@@ -60,3 +60,31 @@ https://github.com/user-attachments/assets/3e823fef-421b-4f22-a7d6-7f7f73d8bee9
 
 Balance robot remote control
 https://youtu.be/zjSgxROftQg
+
+
+# English version
+
+## How It Works
+1. Data Acquisition: The vehicle's tilt angle is sampled from the MPU6050 sensor at a 5ms interval.
+2. Processing: Based on the current tilt angle, the processor calculates the PWM (Pulse Width Modulation) and rotation direction using a PID control algorithm.
+3. Execution: The system adjusts the motor speed and direction in real-time to maintain the vehicle's self-balancing state.
+
+## PID Tuning Guide
+1. Set all gains (Kp, Ki, Kd) to zero.
+2. Gradually increase Kp until the robot starts to oscillate (move back and forth) around the center position.
+3. Increase Kd to dampen the oscillations caused by Kp.
+4. If the robot balances but slowly drifts in one direction or fails to reach the exact center, slightly increase Ki
+
+## Remote Control Guide
+1. Connectivity: To control the vehicle, establish a Bluetooth connection between the robot and your smartphone.
+2. Controller App: Use the "Arduino Bluetooth Control" app (available on mobile) to transmit control signals to the vehicle.
+3. Operation: Upon receiving signals, the processor decodes the commands and maneuvers the vehicle (Forward, Backward, Left, Right) accordingly.
+
+## Remote Control Strategy
+The vehicle utilizes a dynamic setpoint and differential motor control to achieve movement while maintaining balance.
+1. Movement Logic Forward/Backward: Instead of directly powering the motors, the system adjusts the PID Setpoint by 5 degree. This creates a controlled lean, forcing the PID loop to drive the wheels forward or backward to "catch" the fall, resulting in constant motion.
+2. Steering (Left/Right): To turn while moving, the system applies a 50% reduction to the PWM signal of the inner wheel (the side it is turning towards) relative to its calculated balancing PWM.
+
+To prevent the robot from reaching a "point of no return" (where it moves so fast it can no longer tilt back to balance), a Deceleration Mechanism is implemented:
+- Encoder Feedback: The MCU reads pulse signals from the encoders to calculate the real-time velocity.
+- Automatic Correction: If the velocity exceeds a predefined safety threshold, the system overrides the current command and resets the Setpoint to the neutral (balanced) position to decelerate and regain stability.
